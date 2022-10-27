@@ -1,6 +1,5 @@
 # Created by .ignore support plugin (hsz.mobi)
 
-
 *.iml
 *.xml
 *.pyc
@@ -8,4 +7,4 @@
 #*.pdf
 *.params
 *.states
-.tmp.driveupload
+.tmp*
