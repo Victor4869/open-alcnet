@@ -599,7 +599,7 @@ class MPCMResNetFPN(HybridBlock):
             elif self.pyramid_fuse == 'bottomupglobal':
                 c23pcm = self.bottomupglobal_fpn_2(up_c3pcm, c2pcm)
             else:
-                raise ValueError("unknow self.scale_mode")
+                raise ValueError("unknow self.pyramid_fuse")
 
             up_c23pcm = F.contrib.BilinearResize2D(c23pcm, height=c1_hei, width=c1_wid)  # sub 2, 16
 
