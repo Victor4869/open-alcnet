@@ -41,6 +41,12 @@ class IceContrast(SegmentationDataset):
         elif base_dir == 'Iceberg':
             self._anno_path = os.path.join('{}', 'labels/mask/', '{}_pixels0.png')
             self._image_path = os.path.join('{}', 'images', '{}.png')
+        elif base_dir == 'IRSTD-1k':
+            self._anno_path = os.path.join('{}', 'IRSTD1k_Label', '{}.png')
+            self._image_path = os.path.join('{}', 'IRSTD1k_Img', '{}.png')
+        elif base_dir == 'sirst':
+            self._anno_path = os.path.join('{}', 'masks/', '{}_pixels0.png')
+            self._image_path = os.path.join('{}', 'images', '{}.png')
         else:
             raise ValueError("Unknown base dir")
 
@@ -76,7 +82,7 @@ class IceContrast(SegmentationDataset):
             img, mask = self._val_sync_transform(img, mask)
         else:
             assert self.mode == 'testval'
-            if self.base_dir == 'DENTIST':
+            if self.base_dir == 'DENTIST' or 'sirst':
                 img, mask = self._testval_sync_transform(img, mask)
             else:
                 img, mask = self._img_transform(img), self._mask_transform(mask)
