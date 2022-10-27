@@ -1,9 +1,9 @@
 
-**Master branch**
+**[Master branch](https://github.com/Victor4869/open-alcnet)**
 
 Fix reported issues in the orginal scripts.
 
-**Dev branch**
+**[Dev branch](hhttps://github.com/Victor4869/open-alcnet/tree/dev)**
 
 This branch contains additional features and improvements:
 1. The [SIRST](https://github.com/YimianDai/sirst) and [IRSTD-1k](https://github.com/RuiZhang97/ISNet) datasets added to the folder.
