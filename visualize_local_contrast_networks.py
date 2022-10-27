@@ -7,7 +7,7 @@ import sys
 import socket
 import argparse
 import numpy as np
-from utils import summary
+# from utils import summary
 from tqdm import tqdm
 
 import mxnet as mx
@@ -18,12 +18,28 @@ from data import IceContrast
 from model import MPCMResNetFPN
 from loss import SoftIoULoss
 
+from datetime import datetime
+import time
+
 import matplotlib.pyplot as plt
+import cv2
+
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
+
 
 def parse_args():
     """Training Options for Segmentation Experiments"""
     parser = argparse.ArgumentParser(description='MXNet Gluon \
                                      Segmentation')
+
+    # host information
+    parser.add_argument('--host', type=str, default='xxx',
+                        help='xxx is a place holder, leave as default or replace with \
+                            your host information. e.g. host name or GPU details')
+
     # model
     parser.add_argument('--net-choice', type=str, default='MPCMResNetFPN',
                         help='model name PCMNet, PlainNet')
@@ -36,7 +52,10 @@ def parse_args():
     parser.add_argument('--cue', type=str, default='lcm', help='lcm or orig')
     # dataset
     parser.add_argument('--dataset', type=str, default='DENTIST',
-                        help='dataset name (default: DENTIST, Iceberg)')
+                        help='folder name of your dataset (default: DENTIST, Iceberg)')
+    parser.add_argument('--data-root', type=str, default=None,
+                        help='use this if your dataset is outside the alcnet folder, \
+                            enter the root path of your dataset folder (default: None)')
     parser.add_argument('--workers', type=int, default=48,
                         metavar='N', help='dataloader threads')
     parser.add_argument('--base-size', type=int, default=256,
@@ -103,8 +122,12 @@ def parse_args():
     # checking point
     parser.add_argument('--resume', type=str, default=None,
                         help='put the path to resuming file if needed')
+
+    # using colab                    
     parser.add_argument('--colab', action='store_true', default=
                         False, help='whether using colab')
+    parser.add_argument('--colab-path', type=str, default=None,
+                        help='put the path of the ALCNet folder in Colab')
 
     # evaluation only
     parser.add_argument('--eval', action='store_true', default= False,
@@ -133,40 +156,76 @@ def parse_args():
     args.norm_layer = mx.gluon.contrib.nn.SyncBatchNorm if args.syncbn \
         else mx.gluon.nn.BatchNorm
     args.norm_kwargs = {'num_devices': len(args.ctx)} if args.syncbn else {}
-    print(args)
+    # print(args)
     return args
 
 
 class Trainer(object):
     def __init__(self, args):
         self.args = args
+
+        # print arguments in multiple lines
+        tmp = str(args).split(",")
+        self.arg_string = ""
+        line = ''
+        for k in tmp:
+            if len(line + k) > 90:
+                self.arg_string = self.arg_string + '\n' + k[1:] + ','
+                line = k
+            else:
+                self.arg_string = self.arg_string + k + ','
+                line = line + k
+        self.arg_string = self.arg_string[:-1] + '\n'
+        print (self.arg_string)
+        
         # image transform
         input_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize([.485, .456, .406], [.229, .224, .225]),  # Default mean and std
         ])
         ################################# dataset and dataloader #################################
-        if platform.system() == "Darwin":
-            data_root = os.path.join('~', 'Nutstore Files', 'Dataset')
-        elif platform.system() == "Linux":
-            data_root = os.path.join('~', 'datasets')
-            if args.colab:
-                data_root = '/content/datasets'
+        
+        # if platform.system() == "Darwin":
+        #     data_root = os.path.join('~', 'Nutstore Files', 'Dataset')
+        # elif platform.system() == "Linux":
+        #     data_root = os.path.join('~', 'datasets')
+        #     if args.colab:
+        #         # data_root = '/content/datasets'
+        #         data_root = '/content/drive/MyDrive/Colab Notebooks/alcnet/datasets'
+        # else:
+        #     raise ValueError('Notice Dataset Path')
+        
+        # get the path of alcnet folder
+        if args.colab:
+            if args.colab_path is not None:
+                self.alc_dir = args.colab_path
+            else:
+                raise RuntimeError("Plese enter the full path of ALCNet in Colab to argument --colab-path")    
         else:
-            raise ValueError('Notice Dataset Path')
+            self.alc_dir = os.getcwd()
+        
+        # get the root path of the dataset
+        if args.data_root is not None:
+            self.data_root = args.data_root
+        else:
+            self.data_root = self.alc_dir
 
         data_kwargs = {'base_size': args.base_size, 'transform': input_transform,
-                       'crop_size': args.crop_size, 'root': data_root,
+                       'crop_size': args.crop_size, 'root': self.data_root,
                        'base_dir' : args.dataset}
+
         # data_kwargs = {'base_size': args.base_size,
         #                'crop_size': args.crop_size, 'root': data_root,
         #                'base_dir' : args.dataset}
+        
         valset = IceContrast(split=args.val_split, mode='testval', include_name=True,
                              **data_kwargs)
         self.valset = valset
 
         net_choice = args.net_choice
         print("net_choice: ", net_choice)
+
+        model = '' #Fix scope issue
 
         if net_choice == 'MPCMResNetFPN':
             layers = [self.args.blocks] * 3
@@ -188,11 +247,29 @@ class Trainer(object):
         else:
             raise ValueError('Unknow net_choice')
 
-        self.host_name = socket.gethostname()
-        self.save_prefix = 'MLCPFN' + '_' + args.scale_mode + '_' + args.pyramid_fuse + '_'
+        if args.host == 'xxx':
+            self.host_name = socket.gethostname()  # automatic
+        else:
+            self.host_name = args.host # Specified host information
+            
 
-        params_path = './params/BottomUpLocal_r_1_b_4_0.7614.params'
-        model.load_parameters(params_path, ctx=args.ctx)
+
+        # self.save_prefix = 'MLCPFN' + '_' + args.scale_mode + '_' + args.pyramid_fuse + '_'
+        self.save_prefix = net_choice + '_' + args.scale_mode + '_' + args.pyramid_fuse + '_'
+
+        if args.resume is not None:
+            if os.path.isfile(args.resume):
+                model.load_parameters(args.resume, ctx=args.ctx)
+            else:
+                raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
+        else:
+            # model.initialize(init=init.Xavier(), ctx=args.ctx, force_reinit=True)
+            model.initialize(init=init.MSRAPrelu(), ctx=args.ctx, force_reinit=True)
+            print("Model Initializing")
+            print("args.ctx: ", args.ctx)
+
+        # params_path = '/content/drive/MyDrive/Colab Notebooks/alcnet/params/' + self.paramsfile
+        # model.load_parameters(params_path, ctx=args.ctx)
         self.net = model
 
         # create criterion
