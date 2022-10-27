@@ -334,7 +334,7 @@ class Trainer(object):
         self.best_nIoU = 0
         self.is_best = False
 
-        self.self.param_save_path = self.alc_dir + '/params/' # path to save parameter files
+        self.param_save_path = self.alc_dir + '/params/' # path to save parameter files
         # print(self.param_save_path)
 
         date = datetime.now()
