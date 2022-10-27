@@ -334,6 +334,24 @@ class Trainer(object):
         self.best_nIoU = 0
         self.is_best = False
 
+        self.self.param_save_path = self.alc_dir + '/params/' # path to save parameter files
+        # print(self.param_save_path)
+
+        date = datetime.now()
+        date_string = date.strftime("%d-%m-%Y_") # date for log file name
+
+        with open(self.param_save_path + date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
+            now = datetime.now()
+            dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
+            f.write('\n{} {}\n'.format(dt_string, self.arg_string))
+        
+        with open(self.param_save_path + date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
+            now = datetime.now()
+            dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+            f.write('\n{} {}\n'.format(dt_string, self.arg_string))
+
+
+
     def training(self, epoch):
         tbar = tqdm(self.train_data)
         train_loss = 0.0
@@ -373,36 +391,20 @@ class Trainer(object):
             _, nIoU = self.nIoU_metric.get()
             tbar.set_description('Epoch %d, IoU: %.4f, nIoU: %.4f' % (epoch, IoU, nIoU))
 
-        param_save_path = self.alc_dir + '/params/' # path to save parameter files
-        # print(param_save_path)
-
-        date = datetime.now()
-        date_string = date.strftime("%d-%m-%Y_") # date for log file name
-
-        with open(param_save_path + date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
-            now = datetime.now()
-            dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
-            f.write('\n{} {}\n'.format(dt_string, self.arg_string))
-        
-        with open(param_save_path + date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
-            now = datetime.now()
-            dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-            f.write('\n{} {}\n'.format(dt_string, self.arg_string))
-
         if IoU > self.best_iou:
             self.best_iou = IoU
-            self.net.save_parameters(param_save_path + 'tmp_{:s}_best_{:s}.params'.format(
+            self.net.save_parameters(self.param_save_path + 'tmp_{:s}_best_{:s}.params'.format(
                 self.save_prefix, 'IoU'))  
-            with open(param_save_path + date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
+            with open(self.param_save_path + date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
                 now = datetime.now()
                 dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
                 f.write('{} - epoch: {:04d} IoU: {:.4f}\n'.format(dt_string, epoch, IoU))
 
         if nIoU > self.best_nIoU:
             self.best_nIoU = nIoU
-            self.net.save_parameters(param_save_path + 'tmp_{:s}_best_{:s}.params'.format(
+            self.net.save_parameters(self.param_save_path + 'tmp_{:s}_best_{:s}.params'.format(
                 self.save_prefix, 'nIoU'))
-            with open(param_save_path + date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
+            with open(self.param_save_path + date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
                 now = datetime.now()
                 dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
                 f.write('{} - epoch: {:04d} nIoU: {:.4f}\n'.format(dt_string, epoch, nIoU))
@@ -422,14 +424,14 @@ class Trainer(object):
             #     self.save_prefix, 'nIoU', str(self.best_nIoU)))
             now = datetime.now()
             dt_string = now.strftime("%d-%m-%Y_%H%M%S")
-            with open(param_save_path + date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
+            with open(self.param_save_path + date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
                 f.write('{} - Finished\n'.format(dt_string))
-            with open(param_save_path + date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
+            with open(self.param_save_path + date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
                 f.write('{} - Finished\n'.format(dt_string))
             self.net.save_parameters('{}{}_{:s}_best_{:s}_{:.4f}.params'.format(
-                param_save_path, dt_string, self.save_prefix, 'IoU', self.best_iou))
+                self.param_save_path, dt_string, self.save_prefix, 'IoU', self.best_iou))
             self.net.save_parameters('{}{}_{:s}_best_{:s}_{:.4f}.params'.format(
-                param_save_path, dt_string, self.save_prefix, 'nIoU', self.best_nIoU))
+                self.param_save_path, dt_string, self.save_prefix, 'nIoU', self.best_nIoU))
 
 if __name__ == "__main__":
     args = parse_args()
