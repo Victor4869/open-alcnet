@@ -28,7 +28,9 @@ def parse_args():
 
     # host information
     parser.add_argument('--host', type=str, default='xxx',
-                        help='xxx is a place holder, leave as default or replace with your host information. e.g. host name or GPU details')
+                        help='xxx is a place holder, leave as default or replace with \
+                            your host information. e.g. host name or GPU details')
+
     # model
     parser.add_argument('--net-choice', type=str, default='PCMNet',
                         help='model name PCMNet, PlainNet')
@@ -44,7 +46,10 @@ def parse_args():
     parser.add_argument('--cue', type=str, default='lcm', help='lcm or orig')
     # dataset
     parser.add_argument('--dataset', type=str, default='DENTIST',
-                        help='dataset name (default: DENTIST, Iceberg)')
+                        help='folder name of your dataset (default: DENTIST, Iceberg)')
+    parser.add_argument('--data-root', type=str, default=None,
+                        help='use this if your dataset is outside the alcnet folder, \
+                            enter the root path of your dataset folder (default: None)')
     parser.add_argument('--workers', type=int, default=48,
                         metavar='N', help='dataloader threads')
     parser.add_argument('--base-size', type=int, default=512,
@@ -116,8 +121,12 @@ def parse_args():
     # checking point
     parser.add_argument('--resume', type=str, default=None,
                         help='put the path to resuming file if needed')
+
+    # using colab                    
     parser.add_argument('--colab', action='store_true', default=
                         False, help='whether using colab')
+    parser.add_argument('--colab-path', type=str, default=None,
+                        help='put the path of the ALCNet folder in Colab')
 
     # evaluation only
     parser.add_argument('--eval', action='store_true', default= False,
@@ -177,18 +186,38 @@ class Trainer(object):
             # transforms.Normalize([.418, .447, .571], [.091, .078, .076]),   # Iceberg mean and std
         ])
         ################################# dataset and dataloader #################################
-        if platform.system() == "Darwin":
-            data_root = os.path.join('~', 'Nutstore Files', 'Dataset')
-        elif platform.system() == "Linux":
-            data_root = os.path.join('~', 'datasets')
-            if args.colab:
-                # data_root = '/content/gdrive/My Drive/Colab Notebooks/datasets'
-                data_root = '/content/datasets'
+# =============================================================================
+#         if platform.system() == "Darwin":
+#             data_root = os.path.join('~', 'Nutstore Files', 'Dataset')
+#         elif platform.system() == "Linux":
+#             data_root = os.path.join('~', 'datasets')
+#             if args.colab:
+#                 # data_root = '/content/gdrive/My Drive/Colab Notebooks/datasets'
+#                 data_root = '/content/datasets'
+#         elif platform.system() == "Windows":
+#             data_root = os.path.join(os.path.abspath(os.getcwd()), 'alcnet', 'datasets')
+#         else:
+#             raise ValueError('Notice Dataset Path')
+# =============================================================================
+
+
+        # get the path of alcnet folder
+        if args.colab:
+            if args.colab_path is not None:
+                self.alc_dir = args.colab_path
+            else:
+                raise RuntimeError("Plese enter the full path of ALCNet in Colab to argument --colab-path")
         else:
-            raise ValueError('Notice Dataset Path')
+            self.alc_dir = os.getcwd()
+        
+        # get the root path of the dataset
+        if args.data_root is not None:
+            self.data_root = args.data_root
+        else:
+            self.data_root = self.alc_dir
 
         data_kwargs = {'base_size': args.base_size, 'transform': input_transform,
-                       'crop_size': args.crop_size, 'root': data_root,
+                       'crop_size': args.crop_size, 'root': self.data_root,
                        'base_dir' : args.dataset}
         trainset = IceContrast(split=args.train_split, mode='train',   **data_kwargs)
         valset = IceContrast(split=args.val_split, mode='testval', **data_kwargs)
