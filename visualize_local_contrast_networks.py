@@ -217,7 +217,7 @@ class Trainer(object):
         # data_kwargs = {'base_size': args.base_size,
         #                'crop_size': args.crop_size, 'root': data_root,
         #                'base_dir' : args.dataset}
-        
+
         valset = IceContrast(split=args.val_split, mode='testval', include_name=True,
                              **data_kwargs)
         self.valset = valset
@@ -290,37 +290,89 @@ class Trainer(object):
     ################################# evaluation metrics #################################
 
     def validation(self, epoch):
-        save_path = os.path.expanduser('/Users/grok/Downloads/')
+        # setting save path for prediction images
+        # using the parameter file name as the folder name for predicted images
+        head, tail = os.path.split(args.resume)
+        f_name, f_ext = os.path.splitext(tail)
 
-        # summary(self.net, mx.nd.zeros((1, 3, args.crop_size, args.crop_size), ctx=args.ctx[0]))
-        # sys.exit()
+        path = os.path.join(self.alc_dir,'results', f_name + "/")
+        save_path = os.path.expanduser(path)
+        try:
+            os.makedirs(save_path)
+            print(save_path + ' did not existed and was created.')
+        except:
+            print("Image folder already found: " + save_path)
 
-        i = 0
-        mx.nd.waitall()
-        start = timeit.default_timer()
+        times = [] # to record inference time
+
+        
+        os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '0' # turn off performance tests 
         for img, mask, img_id in self.valset:
-            exp_img = img.expand_dims(axis=0)
+
+            exp_img = img.expand_dims(axis=0) # load image
+
+            #exp_img to gpu if there is one
             if not (len(mx.test_utils.list_gpus()) == 0):
                 exp_img = exp_img.copyto(mx.gpu())
-            # pred = self.net(exp_img).squeeze().asnumpy() > 0
-            pred = self.net(exp_img)
-            pred = pred.squeeze().asnumpy() > 0 # from NDArray to a boolean numpy array
+            tic = time.time()
+            pred = self.net(exp_img)  # prediction
+            mx.nd.waitall()
+            toc = time.time()
+            times.append(toc-tic) # record the inference time
+            
+            pred = pred.squeeze().asnumpy() > 0 # convert NDarray to boolean numpy array
+
+            #save image
             plt.imsave(save_path + img_id + '.png', pred)
-            # print(pred.shape)
 
-        # save_path = os.path.expanduser('/Users/grok/Downloads/img')
+            # for saving balck and white image
+            # plt.imsave(save_path + img_id + '.png', pred, cmap='gray', vmin=0, vmax=1)
+
+        os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '1' # turn performance test back on
+
+        # create log file
+        str1 = "Dateset: " + args.dataset + ", Prediction time: {:.4f}s, FPS: {:.2f}".format(sum(times), len(self.valset)/sum(times) )
+        str2 = "Log file and " + str(len(self.valset)) + " images saved in: " + save_path
+        now = datetime.now()
+        with open(save_path + f_name + '.log', 'a') as f:
+          f.write("\n" "Date: "+ now.strftime("%d/%m/%Y %H:%M:%S") + "\n")
+          f.write("Parameter file: " + args.resume + "\n")
+          f.write("Host info: " + self.host_name + "\n")
+          f.write(str1 + "\n")
+          f.write(str2 + "\n")
+
+        # print summary on screen
+        print(str1)
+        print(str2)
+
+        # save_path = os.path.expanduser('/Users/grok/Downloads/')
+
+        # # summary(self.net, mx.nd.zeros((1, 3, args.crop_size, args.crop_size), ctx=args.ctx[0]))
+        # # sys.exit()
+
+        # i = 0
+        # mx.nd.waitall()
+        # start = timeit.default_timer()
         # for img, mask, img_id in self.valset:
-            # exp_img = img.expand_dims(axis=0)
-            # img = mx.nd.transpose(img, (1, 2, 0))
-            # print(img.shape)
-            # img = img.squeeze().asnumpy() / 255
-            # plt.imsave(save_path + img_id + '.png', img)
+        #     exp_img = img.expand_dims(axis=0)
+        #     if not (len(mx.test_utils.list_gpus()) == 0):
+        #         exp_img = exp_img.copyto(mx.gpu())
+        #     # pred = self.net(exp_img).squeeze().asnumpy() > 0
+        #     pred = self.net(exp_img)
+        #     pred = pred.squeeze().asnumpy() > 0 # from NDArray to a boolean numpy array
+        #     plt.imsave(save_path + img_id + '.png', pred)
+        #     # print(pred.shape)
+
+        # # save_path = os.path.expanduser('/Users/grok/Downloads/img')
+        # # for img, mask, img_id in self.valset:
+        #     # exp_img = img.expand_dims(axis=0)
+        #     # img = mx.nd.transpose(img, (1, 2, 0))
+        #     # print(img.shape)
+        #     # img = img.squeeze().asnumpy() / 255
+        #     # plt.imsave(save_path + img_id + '.png', img)
 
 
-            # break
-
-
-
+        #     # break
 
 if __name__ == "__main__":
     args = parse_args()
