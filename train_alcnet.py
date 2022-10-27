@@ -25,6 +25,10 @@ def parse_args():
     """Training Options for Segmentation Experiments"""
     parser = argparse.ArgumentParser(description='MXNet Gluon \
                                      Segmentation')
+
+    # host information
+    parser.add_argument('--host', type=str, default='xxx',
+                        help='xxx is a place holder, leave as default or replace with your host information. e.g. host name or GPU details')
     # model
     parser.add_argument('--net-choice', type=str, default='PCMNet',
                         help='model name PCMNet, PlainNet')
@@ -194,11 +198,11 @@ class Trainer(object):
         self.eval_data = gluon.data.DataLoader(valset, args.test_batch_size,
             last_batch='rollover', num_workers=args.workers)
 
-        model = '' #Fix scope issue
-
         # net_choice = 'PCMNet'  # ResNetFPN, PCMNet, MPCMNet, LayerwiseMPCMNet
         net_choice = self.args.net_choice
         print("net_choice: ", net_choice)
+
+        model = '' #Fix scope issue
 
         if net_choice == 'MPCMResNetFPN':
             r = self.args.r
@@ -212,7 +216,7 @@ class Trainer(object):
             model = MPCMResNetFPN(layers=layers, channels=channels, shift=shift,
                                   pyramid_mode=pyramid_mode, scale_mode=scale_mode,
                                   pyramid_fuse=pyramid_fuse, r=r, classes=trainset.NUM_CLASS)
-            print("net_choice: ", net_choice)
+            # print("net_choice: ", net_choice)
             print("scale_mode: ", scale_mode)
             print("pyramid_fuse: ", pyramid_fuse)
             print("r: ", r)
@@ -220,8 +224,11 @@ class Trainer(object):
             print("channels: ", channels)
             print("shift: ", shift)
 
+        if args.host == 'xxx':
+            self.host_name = socket.gethostname()  # automatic
+        else:
+            self.host_name = args.host             # Your desired host information
 
-        self.host_name = socket.gethostname()
         self.save_prefix = self.host_name + '_' + net_choice + '_scale-mode_' + args.scale_mode + \
                            '_pyramid-fuse_' + args.pyramid_fuse + '_b_' + str(args.blocks)
         if args.net_choice == 'ResNetFCN':
