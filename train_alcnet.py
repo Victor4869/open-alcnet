@@ -144,13 +144,28 @@ def parse_args():
         else mx.gluon.nn.BatchNorm
     # args.norm_kwargs = {'num_devices': args.ngpus} if args.syncbn else {}
     args.norm_kwargs = {'num_devices': len(args.ctx)} if args.syncbn else {}
-    print(args)
+    # print(args)
     return args
 
 
 class Trainer(object):
     def __init__(self, args):
         self.args = args
+        
+        # print arguments in multiple lines
+        tmp = str(args).split(",")
+        self.arg_string = ""
+        line = ''
+        for k in tmp:
+            if len(line + k) > 90:
+                self.arg_string = self.arg_string + '\n' + k[1:] + ','
+                line = k
+            else:
+                self.arg_string = self.arg_string + k + ','
+                line = line + k
+        self.arg_string = self.arg_string[:-1] + '\n'
+        print (self.arg_string)
+
         # image transform
         input_transform = transforms.Compose([
             transforms.ToTensor(),
