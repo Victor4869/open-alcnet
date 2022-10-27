@@ -267,6 +267,7 @@ class Trainer(object):
         if args.resume is not None:
             if os.path.isfile(args.resume):
                 model.load_parameters(args.resume, ctx=args.ctx)
+                print("Model loaded")
             else:
                 raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
         else:
@@ -307,7 +308,7 @@ class Trainer(object):
         # For Adam
 
         if args.dtype == 'float16':
-            optimizer_params['multi_precision'] = True
+            optimizer_params['multi_precision'] = Truedate_string
 
         if args.no_wd:
             for k, v in self.net.collect_params('.*beta|.*gamma|.*bias').items():
@@ -334,18 +335,27 @@ class Trainer(object):
         self.best_nIoU = 0
         self.is_best = False
 
-        self.param_save_path = self.alc_dir + '/params/' # path to save parameter files
-        # print(self.param_save_path)
+        
 
         date = datetime.now()
-        date_string = date.strftime("%d-%m-%Y_") # date for log file name
+        self.date_string = date.strftime("%d-%m-%Y_") # date for log file name
 
-        with open(self.param_save_path + date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
+        self.param_save_path = self.alc_dir + '/params/' + date.strftime("%d-%m-%Y_%H-%M-%S") + "/"    # path to save parameter files
+        # print(self.param_save_path)
+
+        # make folder for parameter files
+        try:
+            os.makedirs(self.param_save_path)
+            print(self.param_save_path + ' did not existed and was created.')
+        except:
+            print("Parameter folder already found: " + self.param_save_path)
+
+        with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
             now = datetime.now()
             dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
             f.write('\n{} {}\n'.format(dt_string, self.arg_string))
         
-        with open(self.param_save_path + date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
+        with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
             now = datetime.now()
             dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
             f.write('\n{} {}\n'.format(dt_string, self.arg_string))
@@ -395,7 +405,7 @@ class Trainer(object):
             self.best_iou = IoU
             self.net.save_parameters(self.param_save_path + 'tmp_{:s}_best_{:s}.params'.format(
                 self.save_prefix, 'IoU'))  
-            with open(self.param_save_path + date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
+            with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
                 now = datetime.now()
                 dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
                 f.write('{} - epoch: {:04d} IoU: {:.4f}\n'.format(dt_string, epoch, IoU))
@@ -404,7 +414,7 @@ class Trainer(object):
             self.best_nIoU = nIoU
             self.net.save_parameters(self.param_save_path + 'tmp_{:s}_best_{:s}.params'.format(
                 self.save_prefix, 'nIoU'))
-            with open(self.param_save_path + date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
+            with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
                 now = datetime.now()
                 dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
                 f.write('{} - epoch: {:04d} nIoU: {:.4f}\n'.format(dt_string, epoch, nIoU))
@@ -424,9 +434,9 @@ class Trainer(object):
             #     self.save_prefix, 'nIoU', str(self.best_nIoU)))
             now = datetime.now()
             dt_string = now.strftime("%d-%m-%Y_%H%M%S")
-            with open(self.param_save_path + date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
+            with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
                 f.write('{} - Finished\n'.format(dt_string))
-            with open(self.param_save_path + date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
+            with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
                 f.write('{} - Finished\n'.format(dt_string))
             self.net.save_parameters('{}{}_{:s}_best_{:s}_{:.4f}.params'.format(
                 self.param_save_path, dt_string, self.save_prefix, 'IoU', self.best_iou))
