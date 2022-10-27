@@ -290,6 +290,7 @@ class Trainer(object):
     ################################# evaluation metrics #################################
 
     def validation(self, epoch):
+        
         # setting save path for prediction images
         # using the parameter file name as the folder name for predicted images
         head, tail = os.path.split(args.resume)
@@ -327,6 +328,38 @@ class Trainer(object):
 
             # for saving balck and white image
             # plt.imsave(save_path + img_id + '.png', pred, cmap='gray', vmin=0, vmax=1)
+
+            # draw bounding box using the ground true labelling xml file
+            # pass if xml file is not found
+            try:
+              xml_path = ''
+              if self.dataset == 'sirst':
+                  xml_path = os.path.join(self.data_root,self.dataset,'masks', img_id+'.xml')
+                  xml_path = os.path.expanduser(xml_path)
+              # print(xml_path)
+              xml_file = ET.parse(xml_path)
+              xml_root = xml_file.getroot()
+              # sample_annotations = []
+              width = int(xml_root.find('size').find('width').text)
+              height = int(xml_root.find('size').find('height').text)
+
+              for neighbor in xml_root.iter('bndbox'):
+                  xmin = int(int(neighbor.find('xmin').text)/width*512)
+                  ymin = int(int(neighbor.find('ymin').text)/height*512)
+                  xmax = int(int(neighbor.find('xmax').text)/width*512)
+                  ymax = int(int(neighbor.find('ymax').text)/height*512)
+                  
+                  # sample_annotations.append([xmin, ymin, xmax, ymax])
+                  img = cv2.imread(save_path + img_id + '.png') # load the image saved above
+                  box_offset = 1 # offset the bounding box from the centre by the specified pixels
+
+                  # draw bounding box to image
+                  image2 = cv2.rectangle(img,(xmin-box_offset, ymin-box_offset), 
+                                  (xmax+box_offset, ymax+box_offset), (0,0,255),1)
+                  cv2.imwrite(save_path + 'boxed_'+ img_id + '.png', image2) # save the new image
+            except:
+              pass
+            # break
 
         os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '1' # turn performance test back on
 
