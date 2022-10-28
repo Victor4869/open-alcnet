@@ -133,7 +133,7 @@ def parse_args():
                         help='evaluation only')
     parser.add_argument('--no-val', action='store_true', default= False,
                             help='skip validation during training')
-    parser.add_argument('--metric', type=str, default='mAP',
+    parser.add_argument('--metric', type=str, default='IoU',
                         help='F1, IoU, mAP')
 
     # synchronized Batch Normalization
@@ -270,7 +270,7 @@ class Trainer(object):
             args.resume = os.path.expanduser(args.resume)
             if os.path.isfile(args.resume):
                 model.load_parameters(args.resume, ctx=args.ctx)
-                print("Model loaded")
+                print("Model resumed")
             else:
                 raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
         else:
@@ -346,22 +346,44 @@ class Trainer(object):
         self.param_save_path = self.alc_dir + '/params/' + date.strftime("%d-%m-%Y_%H-%M-%S") + "/"    # path to save parameter files
         # print(self.param_save_path)
 
-        # make folder for parameter files
+        # make folder for log and parameter files
         try:
             os.makedirs(self.param_save_path)
             print(self.param_save_path + ' did not existed and was created.')
         except:
             print("Parameter folder already found: " + self.param_save_path)
 
+        # create log files
         with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
             now = datetime.now()
             dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
+
+            # first log message
             f.write('\n{} {}\n'.format(dt_string, self.arg_string))
+            if args.resume is not None:
+                f.write('Model resumed\n')
+            else:
+                f.write('New model initialized\n')
+            if args.eval:
+                f.write('Training mode\n')
+            else:
+                f.write('Evaluation mode\n')
         
         with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
             now = datetime.now()
             dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+
+            # first log message
             f.write('\n{} {}\n'.format(dt_string, self.arg_string))
+            if args.resume is not None:
+                f.write('Model resumed\n')
+            else:
+                f.write('New model initialized\n')
+            if args.eval:
+                f.write('Training mode\n')
+            else:
+                f.write('Evaluation mode\n')
+        
 
 
 
@@ -406,8 +428,11 @@ class Trainer(object):
 
         if IoU > self.best_iou:
             self.best_iou = IoU
+
+            # save the best model
             self.net.save_parameters(self.param_save_path + 'tmp_{:s}_best_{:s}.params'.format(
-                self.save_prefix, 'IoU'))  
+                self.save_prefix, 'IoU'))
+            # log the epoch number and the best IoU value
             with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
                 now = datetime.now()
                 dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
@@ -415,18 +440,19 @@ class Trainer(object):
 
         if nIoU > self.best_nIoU:
             self.best_nIoU = nIoU
+
+            # save the best model
             self.net.save_parameters(self.param_save_path + 'tmp_{:s}_best_{:s}.params'.format(
                 self.save_prefix, 'nIoU'))
+            # log the epoch number and the best IoU value
             with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
                 now = datetime.now()
                 dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
                 f.write('{} - epoch: {:04d} nIoU: {:.4f}\n'.format(dt_string, epoch, nIoU))
 
         if epoch >= args.epochs - 1:
-            print("best_iou: ", self.best_iou)
-            print("best_nIoU: ", self.best_nIoU)
-
-        if epoch >= args.epochs - 1:
+            print("best_iou: {:.4f}".format(self.best_iou))
+            print("best_nIoU: {:.4f}".format(self.best_nIoU))
 
             # with open(self.save_prefix + '_' + '_GPU_' + self.args.gpus +
             #           '_best_IoU.log', 'a') as f:
@@ -436,15 +462,18 @@ class Trainer(object):
             # self.net.save_parameters('tmp_{:s}_best_{:s}_{:s}.params'.format(
             #     self.save_prefix, 'nIoU', str(self.best_nIoU)))
             now = datetime.now()
-            dt_string = now.strftime("%d-%m-%Y_%H%M%S")
+            dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
             with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
-                f.write('{} - Finished\n'.format(dt_string))
+                f.write('{} - Finished, best IoU: {:.4f}\n'.format(dt_string, self.best_iou))
             with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
-                f.write('{} - Finished\n'.format(dt_string))
-            self.net.save_parameters('{}{}_{:s}_best_{:s}_{:.4f}.params'.format(
-                self.param_save_path, dt_string, self.save_prefix, 'IoU', self.best_iou))
-            self.net.save_parameters('{}{}_{:s}_best_{:s}_{:.4f}.params'.format(
-                self.param_save_path, dt_string, self.save_prefix, 'nIoU', self.best_nIoU))
+                f.write('{} - Finished, best nIoU: {:.4f}\n'.format(dt_string, self.best_nIoU))
+
+            # Save the model parameter in the last epoch
+            # In most case, this is not the model with the best IoU and nIoU.
+            self.net.save_parameters('{}{:s}_last_epoch_{:s}_{:.4f}.params'.format(
+                self.param_save_path, self.save_prefix, 'IoU', IoU))
+            self.net.save_parameters('{}{:s}_last_epoch_{:s}_{:.4f}.params'.format(
+                self.param_save_path, self.save_prefix, 'nIoU', nIoU))
 
 if __name__ == "__main__":
     args = parse_args()
