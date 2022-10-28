@@ -58,7 +58,7 @@ def parse_args():
                             enter the root path of your dataset folder (default: None)')
     parser.add_argument('--workers', type=int, default=48,
                         metavar='N', help='dataloader threads')
-    parser.add_argument('--base-size', type=int, default=256,
+    parser.add_argument('--base-size', type=int, default=512,
                         help='base image size')
     parser.add_argument('--blocks', type=int, default=4,
                         help='[1] * blocks')
@@ -68,11 +68,11 @@ def parse_args():
                         help='shift')
     parser.add_argument('--iou-thresh', type=float, default=0.5,
                         help='iou-thresh')
-    parser.add_argument('--crop-size', type=int, default=240,
+    parser.add_argument('--crop-size', type=int, default=480,
                         help='crop image size')
-    parser.add_argument('--train-split', type=str, default='trainval',
+    parser.add_argument('--train-split', type=str, default='train',
                         help='dataset train split (default: train)')
-    parser.add_argument('--val-split', type=str, default='test',
+    parser.add_argument('--val-split', type=str, default='val',
                         help='dataset val split (default: val)')
 
     # training hyper params

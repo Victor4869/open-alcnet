@@ -64,9 +64,9 @@ def parse_args():
                         help='iou-thresh')
     parser.add_argument('--crop-size', type=int, default=480,
                         help='crop image size')
-    parser.add_argument('--train-split', type=str, default='trainval',
+    parser.add_argument('--train-split', type=str, default='train',
                         help='dataset train split (default: train)')
-    parser.add_argument('--val-split', type=str, default='test',
+    parser.add_argument('--val-split', type=str, default='val',
                         help='dataset val split (default: val)')
 
     # training hyper params
@@ -264,7 +264,10 @@ class Trainer(object):
             self.save_prefix = self.host_name + '_' + net_choice + '_b_' + str(args.blocks)
 
         # resume checkpoint if needed
+
+
         if args.resume is not None:
+            args.resume = os.path.expanduser(args.resume)
             if os.path.isfile(args.resume):
                 model.load_parameters(args.resume, ctx=args.ctx)
                 print("Model loaded")
