@@ -1,12 +1,12 @@
-
-
-Training
+Training new model
 
 python train_alcnet.py^
  --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec^
  --scale-mode Multiple --pyramid-fuse bottomuplocal^
  --r 1 --blocks 4^
  --val-split val --batch-size 2 --test-batch-size 8 --epochs 200
+
+Training saved model
 
 python train_alcnet.py^
  --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec^
