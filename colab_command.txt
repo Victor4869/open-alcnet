@@ -1,0 +1,42 @@
+Training new model
+
+!python "/content/drive/MyDrive/open-alcnet/train_alcnet.py" \
+--dataset 'sirst' --net-choice 'MPCMResNetFPN' --pyramid-mode 'Dec' \
+--scale-mode 'Multiple' --pyramid-fuse 'bottomuplocal' \
+--r 1 --blocks 4 \
+--train-split 'train' --val-split 'val' \
+--batch-size 5 --test-batch-size 32 --epochs 50 \
+--colab --colab-path '/content/drive/MyDrive/open-alcnet'
+
+Training saved model
+
+!python "/content/drive/MyDrive/open-alcnet/train_alcnet.py" \
+--dataset 'sirst' --net-choice 'MPCMResNetFPN' --pyramid-mode 'Dec' \
+--scale-mode 'Multiple' --pyramid-fuse 'bottomuplocal' \
+--r 1 --blocks 4 \
+--train-split 'train' --val-split 'val' \
+--batch-size 5 --test-batch-size 32 --epochs 50 \
+--colab --colab-path '/content/drive/MyDrive/open-alcnet'
+--resume '/content/drive/MyDrive/open-alcnet/params/BottomUpLocal_r_1_b_4_0.7614.params'
+
+
+Evaluation
+
+!python "/content/drive/MyDrive/open-alcnet/train_alcnet.py" \
+--dataset 'sirst' --net-choice 'MPCMResNetFPN' --pyramid-mode 'Dec' \
+--scale-mode 'Multiple' --pyramid-fuse 'bottomuplocal' \
+--r 1 --blocks 4 \
+--val-split 'test' --test-batch-size 32 --eval \
+--colab --colab-path '/content/drive/MyDrive/open-alcnet' \
+--resume '/content/drive/MyDrive/open-alcnet/params/BottomUpLocal_r_1_b_4_0.7614.params'
+
+Save image
+
+!python "/content/drive/MyDrive/open-alcnet/visualize_local_contrast_networks.py" \
+--dataset 'sirst' --net-choice 'MPCMResNetFPN' --pyramid-mode 'Dec' \
+--scale-mode 'Multiple' --pyramid-fuse 'bottomuplocal' \
+--r 1 --blocks 4 \
+--val-split 'test' --test-batch-size 32 --eval \
+--base-size 512 --crop-size 480\
+--colab --colab-path '/content/drive/MyDrive/open-alcnet' \
+--resume '/content/drive/MyDrive/open-alcnet/params/BottomUpLocal_r_1_b_4_0.7614.params'
