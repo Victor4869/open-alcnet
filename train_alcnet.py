@@ -42,7 +42,7 @@ def parse_args():
     parser.add_argument('--scale-mode', type=str, default='xxx',
                         help='Single, Multiple, Selective')
     parser.add_argument('--pyramid-fuse', type=str, default='sk',
-                        help='add, max, sk')
+                        help='add, max, sk, bottomuplocal')
     parser.add_argument('--cue', type=str, default='lcm', help='lcm or orig')
     # dataset
     parser.add_argument('--dataset', type=str, default='DENTIST',
@@ -259,7 +259,7 @@ class Trainer(object):
             self.host_name = args.host             # Your desired host information
 
         self.save_prefix = self.host_name + '_' + net_choice + '_scale-mode_' + args.scale_mode + \
-                           '_pyramid-fuse_' + args.pyramid_fuse + '_b_' + str(args.blocks)
+                           '_pyramid-fuse_' + args.pyramid_fuse + '_r_' + str(args.r) + '_b_' + str(args.blocks)
         if args.net_choice == 'ResNetFCN':
             self.save_prefix = self.host_name + '_' + net_choice + '_b_' + str(args.blocks)
 
@@ -364,7 +364,9 @@ class Trainer(object):
                 f.write('Model resumed\n')
             else:
                 f.write('New model initialized\n')
-            if args.eval:
+
+            # somehow the eval value is flipped 
+            if not args.eval:
                 f.write('Training mode\n')
             else:
                 f.write('Evaluation mode\n')
@@ -379,7 +381,9 @@ class Trainer(object):
                 f.write('Model resumed\n')
             else:
                 f.write('New model initialized\n')
-            if args.eval:
+            
+            # somehow the eval value is flipped 
+            if not args.eval:
                 f.write('Training mode\n')
             else:
                 f.write('Evaluation mode\n')
@@ -464,16 +468,16 @@ class Trainer(object):
             now = datetime.now()
             dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
             with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
-                f.write('{} - Finished, best IoU: {:.4f}\n'.format(dt_string, self.best_iou))
+                f.write('{} - Finished {} epoch, best IoU: {:.4f}\n'.format(dt_string, epoch, self.best_iou))
             with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
-                f.write('{} - Finished, best nIoU: {:.4f}\n'.format(dt_string, self.best_nIoU))
+                f.write('{} - Finished {} epoch, best nIoU: {:.4f}\n'.format(dt_string, epoch, self.best_nIoU))
 
             # Save the model parameter in the last epoch
             # In most case, this is not the model with the best IoU and nIoU.
-            self.net.save_parameters('{}{:s}_last_epoch_{:s}_{:.4f}.params'.format(
-                self.param_save_path, self.save_prefix, 'IoU', IoU))
-            self.net.save_parameters('{}{:s}_last_epoch_{:s}_{:.4f}.params'.format(
-                self.param_save_path, self.save_prefix, 'nIoU', nIoU))
+            self.net.save_parameters('{}{}epoch_{:s}_{:s}_{:.4f}.params'.format(
+                self.param_save_path, epoch, self.save_prefix, 'IoU', IoU))
+            self.net.save_parameters('{}{}epoch_{:s}_{:s}_{:.4f}.params'.format(
+                self.param_save_path, epoch, self.save_prefix, 'nIoU', nIoU))
 
 if __name__ == "__main__":
     args = parse_args()
