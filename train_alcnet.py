@@ -500,7 +500,6 @@ class Trainer(object):
         self.val_losses.append(val_loss_ave)
         
         if args.eval is False:
-
             self.ious.append(IoU)
             self.nious.append(nIoU)
 
@@ -519,42 +518,38 @@ class Trainer(object):
                     print("Sign of overfitting, checkpoint saved.")
             
             # Save plot for ious and losses every 5 epoch
-                if args.eval is False and epoch % 5 == 0:
+            if epoch % 5 == 0:
+                # for loss
+                fig = plt.figure()
+                ax = fig.add_subplot(1, 1, 1)
+                ax.plot(range(epoch+1), self.train_losses)
+                ax.plot(range(epoch+1), self.val_losses)
+                ax.legend(["Training","Validation"])
+                ax.set_xlabel("Epoch")
+                ax.set_ylabel("Losses")
+                # plt.show()
+                fig.savefig(self.param_save_path + "losses.png")
+                plt.close(fig)
 
-                    # for loss
-                    fig = plt.figure()
-                    ax = fig.add_subplot(1, 1, 1)
-                    ax.plot(range(epoch+1), self.train_losses)
-                    ax.plot(range(epoch+1), self.val_losses)
-                    ax.legend(["Training","Validation"])
-                    ax.set_xlabel("Epoch")
-                    ax.set_ylabel("Losses")
-                    # plt.show()
-                    fig.savefig(self.param_save_path + "losses.png")
-                    plt.close(fig)
-
-                    # for iou
-                    fig1 = plt.figure()
-                    ax1 = fig1.add_subplot(1, 1, 1)
-                    ax1.plot(range(epoch+1), self.train_losses)
-                    ax1.plot(range(epoch+1), self.val_losses)
-                    ax1.legend(["IoU","nIoU"])
-                    ax1.set_xlabel("Epoch")
-                    ax1.set_ylabel("Metric")
-                    # plt.show()
-                    fig1.savefig(self.param_save_path + "IoUs.png")
-                    plt.close(fig1)
-
-
-            
-
+                # for iou
+                fig1 = plt.figure()
+                ax1 = fig1.add_subplot(1, 1, 1)
+                ax1.plot(range(epoch+1), self.train_losses)
+                ax1.plot(range(epoch+1), self.val_losses)
+                ax1.legend(["IoU","nIoU"])
+                ax1.set_xlabel("Epoch")
+                ax1.set_ylabel("Metric")
+                # plt.show()
+                fig1.savefig(self.param_save_path + "IoUs.png")
+                plt.close(fig1)
 
         if IoU > self.best_iou:
             self.best_iou = IoU
 
             # save the best model
-            self.net.save_parameters(self.param_save_path + 'best_{:s}_{:s}.params'.format(
-                                    'IoU', self.save_prefix))
+            if args.eval is False:
+                self.net.save_parameters(self.param_save_path + 'best_{:s}_{:s}.params'.format(
+                                        'IoU', self.save_prefix))
             # log the epoch number and the best IoU value
             with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
                 now = datetime.now()
@@ -564,40 +559,34 @@ class Trainer(object):
         if nIoU > self.best_nIoU:
             self.best_nIoU = nIoU
             # save the best model
-            self.net.save_parameters(self.param_save_path + 'best_{:s}_{:s}.params'.format(
-                                    'nIoU', self.save_prefix))
+            if args.eval is False:
+                self.net.save_parameters(self.param_save_path + 'best_{:s}_{:s}.params'.format(
+                                        'nIoU', self.save_prefix))
             # log the epoch number and the best IoU value
             with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
                 now = datetime.now()
                 dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
                 f.write('{} - epoch: {:04d} nIoU: {:.4f}\n'.format(dt_string, epoch, nIoU))
 
-        if epoch >= args.epochs - 1:
-            print("best_iou: {:.4f}".format(self.best_iou))
-            print("best_nIoU: {:.4f}".format(self.best_nIoU))
+            if epoch >= args.epochs - 1:
+                print("best_iou: {:.4f}".format(self.best_iou))
+                print("best_nIoU: {:.4f}".format(self.best_nIoU))
 
-            # with open(self.save_prefix + '_' + '_GPU_' + self.args.gpus +
-            #           '_best_IoU.log', 'a') as f:
-            #     f.write('Finished\n')
-            # self.net.save_parameters('tmp_{:s}_best_{:s}_{:s}.params'.format(
-            #     self.save_prefix, 'IoU', str(self.best_iou)))
-            # self.net.save_parameters('tmp_{:s}_best_{:s}_{:s}.params'.format(
-            #     self.save_prefix, 'nIoU', str(self.best_nIoU)))
-            now = datetime.now()
-            dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-            with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
-                f.write('{} - Finished {:04d} epoch, best IoU: {:.4f}\n'.format(dt_string, epoch, self.best_iou))
-            with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
-                f.write('{} - Finished {:04d} epoch, best nIoU: {:.4f}\n'.format(dt_string, epoch, self.best_nIoU))
-
-            # Save the model parameter in the last epoch
-            # In most case, this is not the model with the best IoU and nIoU.
-            # self.net.save_parameters('{}{}epoch_{:s}_{:s}_{:.4f}_{:s}_{:.4f}.params'.format(
-            #     self.param_save_path, epoch, self.save_prefix, 'IoU', IoU, 'nIoU', nIoU))
-            
-            # Save plot for loss and iou
-            if args.eval is False:
-
+                # with open(self.save_prefix + '_' + '_GPU_' + self.args.gpus +
+                #           '_best_IoU.log', 'a') as f:
+                #     f.write('Finished\n')
+                # self.net.save_parameters('tmp_{:s}_best_{:s}_{:s}.params'.format(
+                #     self.save_prefix, 'IoU', str(self.best_iou)))
+                # self.net.save_parameters('tmp_{:s}_best_{:s}_{:s}.params'.format(
+                #     self.save_prefix, 'nIoU', str(self.best_nIoU)))
+                now = datetime.now()
+                dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+                with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
+                    f.write('{} - Finished {:04d} epoch, best IoU: {:.4f}\n'.format(dt_string, epoch, self.best_iou))
+                with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
+                    f.write('{} - Finished {:04d} epoch, best nIoU: {:.4f}\n'.format(dt_string, epoch, self.best_nIoU))
+                
+                # Save plot for loss and iou
                 # for loss
                 fig = plt.figure()
                 ax = fig.add_subplot(1, 1, 1)
@@ -622,11 +611,6 @@ class Trainer(object):
                 fig1.savefig(self.param_save_path + "IoUs.png")
                 plt.close(fig1)
                 print('IoU plot saved')
-
-                
-
-                # for ep, net in enumerate(self.nets):
-                #     net.save_parameters(self.param_save_path + str(ep) + "epoch.params")
 
 
 if __name__ == "__main__":
