@@ -508,7 +508,7 @@ class Trainer(object):
                 if self.val_losses[-1] > self.val_losses[-2] and \
                     self.train_losses[-1] < self.train_losses[-2] and \
                     self.val_losses[-1] > self.train_losses[-1]:
-                    self.net.save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch))
+                    self.nets[-2].save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch-1))
                     # log the check point information
                     with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                         now = datetime.now()
