@@ -24,7 +24,7 @@ This branch contains additional features and improvements:
 >* Record and plot the training losses and validation losses.
 >* Monitor the losses, create model checkpoints when signs of overfitting are detected.
 
-8. Included some samples commands for running the scripts.
+8. Included some sample commands for running the scripts.
 
 ***
 If you are unfamiliar with how to setup an environment for MXNet or how to run the scripts, you can check out the tutorial in the [Wiki](https://github.com/Victor4869/open-alcnet/wiki).
