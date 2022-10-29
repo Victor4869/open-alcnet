@@ -500,18 +500,18 @@ class Trainer(object):
         
         if args.eval is False:
             # save the model if there is sign of overfitting
-            if epoch > 20:
-                if self.val_losses[-1] > self.val_losses[-2] and \
-                    self.train_losses[-1] < self.train_losses[-2] and \
-                    self.val_losses[-1] < self.train_losses[-1]:
-                    self.net.save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch))
-                    # log the check point information
-                    with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
-                        now = datetime.now()
-                        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                        f.write('{} - epoch: {:04d} Training loss: {:.4f} Validation loss: {:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
-                                .format(dt_string, epoch, self.train_losses[-1], self.val_losses[-1],IoU, nIoU))
-                    print("Sign of overfitting, checkpoint saved.")
+            if self.val_losses[-1] > self.val_losses[-2] and \
+                self.train_losses[-1] < self.train_losses[-2] and \
+                self.val_losses[-1] < self.train_losses[-1] and \
+                epoch > 20:
+                self.net.save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch))
+                # log the check point information
+                with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
+                    now = datetime.now()
+                    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+                    f.write('{} - epoch: {:04d} Training loss: {:.4f} Validation loss: {:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
+                            .format(dt_string, epoch, self.train_losses[-1], self.val_losses[-1],IoU, nIoU))
+                print("Sign of overfitting, checkpoint saved.")
             
             # Save plot for losses every 5 epoch
             if epoch % 5 == 0:
