@@ -23,6 +23,7 @@ This branch contains additional features and improvements:
 7. Addtional features in the train_alcnet.py:
 >* Record and plot the training losses and validation losses.
 >* Monitor the losses, create model checkpoints when signs of overfitting are detected.
+>* Record and plot the IoU and nIoU.
 
 8. Included some sample commands for running the scripts.
 
