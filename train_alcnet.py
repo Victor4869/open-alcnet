@@ -361,56 +361,62 @@ class Trainer(object):
         except:
             print("Parameter folder already found: " + self.param_save_path)
 
-        # create log files
+        
         now = datetime.now()
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
 
+        # create log files
         if args.eval is False:
+            # checkpoint log
             try:
                 path = self.param_save_path + 'checkpoint/'
                 os.makedirs(path)
                 print(path + ' did not existed and was created.')
             except:
-                print("Checkpoint folder already found: " + self.param_save_path)
+                print("checkpoint folder already found: " + self.param_save_path)
 
             with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                 f.write('\n{} {}\n'.format(dt_string, self.arg_string))
                 f.write('Check point will be created when all the conditions are met: \n')
-                f.write('1. Operates in tranining mode and current epoch > 20 \n')
-                f.write('2. Validation loss starts increasing and tranining loss remains decreasing.\n')
-                f.write('3. Validation loss is lower than tranining loss. \n')
+                f.write('1. Operates in tranining mode and current epoch > 40 \n')
+                f.write('2. Validation loss increases and tranining loss decreases for 2 successive epochs.\n')
+                f.write('3. Validation loss is higher than tranining loss. \n')
 
-                
-
-
-        with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
-            
-
-            # first log message
-            f.write('\n{} {}\n'.format(dt_string, self.arg_string))
-            if args.resume is not None:
-                f.write('Model resumed\n')
-            else:
-                f.write('New model initialized\n')
-
-            if args.eval is False:
+            # best IoU log    
+            with open(self.param_save_path + 'best_IoU.log', 'a') as f:
+                # first log message
+                f.write('\n{} {}\n'.format(dt_string, self.arg_string))
                 f.write('Training mode\n')
-            else:
-                f.write('Evaluation mode\n')
-        
-        with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
+                if args.resume is not None:
+                    args.resume = os.path.expanduser(args.resume)
+                    if os.path.isfile(args.resume):
+                        print("Model resumed")
+                    else:
+                        raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
 
-            # first log message
-            f.write('\n{} {}\n'.format(dt_string, self.arg_string))
-            if args.resume is not None:
-                f.write('Model resumed\n')
-            else:
-                f.write('New model initialized\n')
-            
-            if args.eval is False:
+            # best nIoU log
+            with open(self.param_save_path + 'best_nIoU.log', 'a') as f:
+                # first log message
+                f.write('\n{} {}\n'.format(dt_string, self.arg_string))
                 f.write('Training mode\n')
-            else:
+                if args.resume is not None:
+                    args.resume = os.path.expanduser(args.resume)
+                    if os.path.isfile(args.resume):
+                        print("Model resumed")
+                    else:
+                        raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
+        else:
+            # evaluation log    
+            with open(self.param_save_path + 'evaluation.log', 'a') as f:
+                # first log message
+                f.write('\n{} {}\n'.format(dt_string, self.arg_string))
                 f.write('Evaluation mode\n')
+                if os.path.isfile(args.resume):
+                    f.write("Model resumed\n")
+                else:
+                    raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
+
+
 
     def training(self, epoch):
         tbar = tqdm(self.train_data)
@@ -434,11 +440,12 @@ class Trainer(object):
             tbar.set_description('Epoch %d, training loss %.4f' % (epoch, train_loss_ave))
         self.train_losses.append(train_loss_ave)
 
-
         if args.eval is False:
             # save the model for each epoch, works in tranining mode only
-            self.net.save_parameters(self.param_save_path + 'tmp.params')
-            model = ''
+            # unable to get deep copy directly from self.net
+            # work around to get deep copy, save parameter file first then load
+            self.net.save_parameters(self.param_save_path + 'last.params')
+            last_model = ''
             if args.net_choice == 'MPCMResNetFPN':
                 r = self.args.r
                 layers = [self.args.blocks] * 3
@@ -448,22 +455,11 @@ class Trainer(object):
                 scale_mode = self.args.scale_mode
                 pyramid_fuse = self.args.pyramid_fuse
 
-                model = MPCMResNetFPN(layers=layers, channels=channels, shift=shift,
+                last_model = MPCMResNetFPN(layers=layers, channels=channels, shift=shift,
                                     pyramid_mode=pyramid_mode, scale_mode=scale_mode,
                                     pyramid_fuse=pyramid_fuse, r=r)
-                # print("net_choice: ", net_choice)
-                # print("scale_mode: ", scale_mode)
-                # print("pyramid_fuse: ", pyramid_fuse)
-                # print("r: ", r)
-                # print("layers: ", layers)
-                # print("channels: ", channels)
-                # print("shift: ", shift)
-            model.load_parameters(self.param_save_path + 'tmp.params', mx.cpu(0))
-            self.nets.append(model)
-
-
-        
-        self.net
+            last_model.load_parameters(self.param_save_path + 'last.params', mx.cpu(0))
+            self.nets.append(last_model)
 
     def validation(self, epoch):
         self.iou_metric.reset()
@@ -477,7 +473,6 @@ class Trainer(object):
             data = gluon.utils.split_and_load(batch[0], ctx_list=self.args.ctx, batch_axis=0)
             labels = gluon.utils.split_and_load(batch[1], ctx_list=self.args.ctx, batch_axis=0)
             preds = []
-
             losses = []
             for x, y in zip(data, labels):
                 pred = self.net(x)
@@ -499,23 +494,26 @@ class Trainer(object):
             tbar.set_description('Epoch %d, validation loss %.4f, IoU: %.4f, nIoU: %.4f' % (epoch, val_loss_ave, IoU, nIoU))
         self.val_losses.append(val_loss_ave)
         
+        # training
         if args.eval is False:
             self.ious.append(IoU)
             self.nious.append(nIoU)
 
             # save the model if there is sign of overfitting
-            if epoch > 20:
+            if epoch > 40:
                 if self.val_losses[-1] > self.val_losses[-2] and \
+                    self.val_losses[-1] > self.val_losses[-3] and \
                     self.train_losses[-1] < self.train_losses[-2] and \
-                    self.val_losses[-1] < self.train_losses[-1]:
-                    self.net.save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch))
+                    self.train_losses[-1] < self.train_losses[-3] and \
+                    self.val_losses[-1] > self.train_losses[-1]:
+                    self.nets[-3].save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch-2))
                     # log the check point information
                     with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                         now = datetime.now()
                         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                        f.write('{} - epoch: {:04d} Training loss: {:.4f} Validation loss: {:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
-                                .format(dt_string, epoch, self.train_losses[-1], self.val_losses[-1],IoU, nIoU))
-                    print("Sign of overfitting, checkpoint saved.")
+                        f.write('{} - checkpoint saved at epoch: {:04d} Training loss: {:.4f} Validation loss: {:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
+                                .format(dt_string, epoch-2, self.train_losses[-3], self.val_losses[-3],self.ious[-3], self.nious[-3]))
+                    print("Sign of overfitting, saved checkpoint at {} epoch.".format(epoch-2))
             
             # Save plot for ious and losses every 5 epoch
             if epoch % 5 == 0:
@@ -524,49 +522,38 @@ class Trainer(object):
                 ax = fig.add_subplot(1, 1, 1)
                 ax.plot(range(epoch+1), self.train_losses)
                 ax.plot(range(epoch+1), self.val_losses)
-                ax.legend(["Training","Validation"])
+                ax.plot(range(epoch+1), self.ious)
+                ax.plot(range(epoch+1), self.nious)
+                ax.legend(["Train loss","Val loss","IoU","nIoU"])
                 ax.set_xlabel("Epoch")
-                ax.set_ylabel("Losses")
-                # plt.show()
-                fig.savefig(self.param_save_path + "losses.png")
-                plt.close(fig)
+                fig.savefig(self.param_save_path + "IoU_losses.png")
+                plt.close('all')
 
-                # for iou
-                fig1 = plt.figure()
-                ax1 = fig1.add_subplot(1, 1, 1)
-                ax1.plot(range(epoch+1), self.train_losses)
-                ax1.plot(range(epoch+1), self.val_losses)
-                ax1.legend(["IoU","nIoU"])
-                ax1.set_xlabel("Epoch")
-                ax1.set_ylabel("Metric")
-                # plt.show()
-                fig1.savefig(self.param_save_path + "IoUs.png")
-                plt.close(fig1)
+            if IoU > self.best_iou:
+                self.best_iou = IoU
 
-        if IoU > self.best_iou:
-            self.best_iou = IoU
-
-            # save the best model
-            if args.eval is False:
+                # save the best model
                 self.net.save_parameters(self.param_save_path + 'best_{:s}_{:s}.params'.format(
-                                        'IoU', self.save_prefix))
-            # log the epoch number and the best IoU value
-            with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
-                now = datetime.now()
-                dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
-                f.write('{} - epoch: {:04d} IoU: {:.4f}\n'.format(dt_string, epoch, IoU))
+                                            'IoU', self.save_prefix))
+                # log the epoch number and the best IoU value
+                with open(self.param_save_path + 'best_IoU.log', 'a') as f:
+                    now = datetime.now()
+                    dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
+                    f.write('{} - epoch: {:04d} IoU: {:.4f}\n'.format(dt_string, epoch, self.best_iou))
 
-        if nIoU > self.best_nIoU:
-            self.best_nIoU = nIoU
-            # save the best model
-            if args.eval is False:
+                print("Best IoU {:.4f} model saved".format(self.best_iou))
+
+            if nIoU > self.best_nIoU:
+                self.best_nIoU = nIoU
+                # save the best model
                 self.net.save_parameters(self.param_save_path + 'best_{:s}_{:s}.params'.format(
-                                        'nIoU', self.save_prefix))
-            # log the epoch number and the best IoU value
-            with open(self.param_save_path + self.date_string + self.save_prefix + '_best_nIoU.log', 'a') as f:
-                now = datetime.now()
-                dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                f.write('{} - epoch: {:04d} nIoU: {:.4f}\n'.format(dt_string, epoch, nIoU))
+                                            'nIoU', self.save_prefix))
+                # log the epoch number and the best IoU value
+                with open(self.param_save_path + 'best_nIoU.log', 'a') as f:
+                    now = datetime.now()
+                    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+                    f.write('{} - epoch: {:04d} nIoU: {:.4f}\n'.format(dt_string, epoch, self.best_nIoU))
+                print("Best nIoU {:.4f} model saved".format(self.best_nIoU))
 
             if epoch >= args.epochs - 1:
                 print("best_iou: {:.4f}".format(self.best_iou))
@@ -587,38 +574,35 @@ class Trainer(object):
                     f.write('{} - Finished {:04d} epoch, best nIoU: {:.4f}\n'.format(dt_string, epoch, self.best_nIoU))
                 
                 # Save plot for loss and iou
-                # for loss
-                fig = plt.figure()
-                ax = fig.add_subplot(1, 1, 1)
-                ax.plot(range(epoch+1), self.train_losses)
-                ax.plot(range(epoch+1), self.val_losses)
-                ax.legend(["Training","Validation"])
-                ax.set_xlabel("Epoch")
-                ax.set_ylabel("Losses")
-                # plt.show()
-                fig.savefig(self.param_save_path + "losses.png")
-                plt.close(fig)
-                print('Loss plot saved')
-
-                # for iou
-                fig1 = plt.figure()
-                ax1 = fig1.add_subplot(1, 1, 1)
-                ax1.plot(range(epoch+1), self.train_losses)
-                ax1.plot(range(epoch+1), self.val_losses)
-                ax1.legend(["IoU","nIoU"])
-                ax1.set_xlabel("Epoch")
-                ax1.set_ylabel("Metric")
-                fig1.savefig(self.param_save_path + "IoUs.png")
-                plt.close(fig1)
-                print('IoU plot saved')
+                if epoch % 5 == 0:
+                    # for loss
+                    fig = plt.figure()
+                    ax = fig.add_subplot(1, 1, 1)
+                    ax.plot(range(epoch+1), self.train_losses)
+                    ax.plot(range(epoch+1), self.val_losses)
+                    ax.plot(range(epoch+1), self.ious)
+                    ax.plot(range(epoch+1), self.nious)
+                    ax.legend(["Train loss","Val loss","IoU","nIoU"])
+                    ax.set_xlabel("Epoch")
+                    fig.savefig(self.param_save_path + "IoU_losses.png")
+                    plt.close('all')
+        # evaluation
+        else:
+            # evaluation log
+            now = datetime.now()
+            dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+            with open(self.param_save_path + 'evaluation.log', 'a') as f:
+                f.write('{} - {} result - loss: {:.4f} IoU: {:.4f}, nIoU: {:.4f}\n'.format(dt_string, args.eval, val_loss_ave, IoU, nIoU))
 
 
 if __name__ == "__main__":
     args = parse_args()
     trainer = Trainer(args)
     if args.eval:
+        os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '0' # turn off performance tests 
         print('Evaluating model: ', args.resume)
         trainer.validation(args.start_epoch)
+        os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '1' # turn performance test back on
     else:
         print('Starting Epoch:', args.start_epoch)
         print('Total Epochs:', args.epochs)
