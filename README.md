@@ -13,12 +13,18 @@ This branch contains additional features and improvements:
 5. Improve File management:
 
 >* Relocate the training log file and parameter file to \params folder. 
->* Relocate the log file and prediction result to \results foler, results from each parameter file will have their own subfoler.
+>* Relocate the log file and prediction result to \results foler.
 
 6. Addtional features in the visualize_local_contrast_networks.py scrpit:
 
 >* Record the inference time.
 >* Draw the ground truth boudning box in the prediction images for easier comparsion, this feature requires the labelling (.xml) file in the dataset.
+
+7. Addtional features in the train_alcnet.py:
+>* Record and plot the training losses and validation losses.
+>* Monitor the losses, create model checkpoints when signs of overfitting are detected.
+
+8. Included some samples commands for running the scripts.
 
 ***
 If you are unfamiliar with how to setup an environment for MXNet or how to run the scripts, you can check out the tutorial in the [Wiki](https://github.com/Victor4869/open-alcnet/wiki).
