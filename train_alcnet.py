@@ -371,7 +371,7 @@ class Trainer(object):
                 os.makedirs(path)
                 print(path + ' did not existed and was created.')
             except:
-                print("Checkpoint folder already found: " + self.param_save_path)
+                print("checkpoint folder already found: " + self.param_save_path)
 
             with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                 f.write('\n{} {}\n'.format(dt_string, self.arg_string))
@@ -513,9 +513,9 @@ class Trainer(object):
                     with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                         now = datetime.now()
                         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                        f.write('{} - epoch: {:04d} Training loss: {:.4f} Validation loss: {:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
-                                .format(dt_string, epoch, self.train_losses[-1], self.val_losses[-1],IoU, nIoU))
-                    print("Sign of overfitting, checkpoint saved.")
+                        f.write('{} - check point at epoch: {:04d} Training loss: {:.4f} Validation loss: {:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
+                                .format(dt_string, epoch-1, self.train_losses[-2], self.val_losses[-2],self.ious[-2], self.nious[-2]))
+                    print("Sign of overfitting, checkpoint at {} epoch saved.".format(epoch-1))
             
             # Save plot for ious and losses every 5 epoch
             if epoch % 5 == 0:
