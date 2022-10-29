@@ -258,8 +258,8 @@ class Trainer(object):
         else:
             self.host_name = args.host             # Your desired host information
 
-        self.save_prefix = self.host_name + '_' + net_choice + '_scale-mode_' + args.scale_mode + \
-                           '_pyramid-fuse_' + args.pyramid_fuse + '_r_' + str(args.r) + '_b_' + str(args.blocks)
+        self.save_prefix = self.host_name + '_' + net_choice + '_' + args.scale_mode + \
+                           '_' + args.pyramid_fuse + '_r_' + str(args.r) + '_b_' + str(args.blocks)
         if args.net_choice == 'ResNetFCN':
             self.save_prefix = self.host_name + '_' + net_choice + '_b_' + str(args.blocks)
 
@@ -343,7 +343,7 @@ class Trainer(object):
         date = datetime.now()
         self.date_string = date.strftime("%d-%m-%Y_") # date for log file name
 
-        self.param_save_path = self.alc_dir + '/params/' + date.strftime("%d-%m-%Y_%H-%M-%S") + "/"    # path to save parameter files
+        self.param_save_path = self.alc_dir + '/params/' + date.strftime("%d-%m-%Y_%H-%M-%S_") + self.host_name + "/"    # path to save parameter files
         # print(self.param_save_path)
 
         # make folder for log and parameter files
