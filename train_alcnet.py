@@ -378,7 +378,7 @@ class Trainer(object):
                 f.write('Check point will be created when all the conditions are met: \n')
                 f.write('1. Operates in tranining mode and current epoch > 20 \n')
                 f.write('2. Validation loss starts increasing and tranining loss remains decreasing.\n')
-                f.write('3. Validation loss is lower than tranining loss. \n')
+                f.write('3. Validation loss is higher than tranining loss. \n')
 
                 
 
@@ -507,7 +507,7 @@ class Trainer(object):
             if epoch > 20:
                 if self.val_losses[-1] > self.val_losses[-2] and \
                     self.train_losses[-1] < self.train_losses[-2] and \
-                    self.val_losses[-1] < self.train_losses[-1]:
+                    self.val_losses[-1] > self.train_losses[-1]:
                     self.net.save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch))
                     # log the check point information
                     with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
@@ -529,7 +529,6 @@ class Trainer(object):
                 ax.set_ylabel("Losses")
                 # plt.show()
                 fig.savefig(self.param_save_path + "losses.png")
-                plt.close(fig)
 
                 # for iou
                 fig1 = plt.figure()
@@ -541,7 +540,7 @@ class Trainer(object):
                 ax1.set_ylabel("Metric")
                 # plt.show()
                 fig1.savefig(self.param_save_path + "IoUs.png")
-                plt.close(fig1)
+                plt.close('all')
 
         if IoU > self.best_iou:
             self.best_iou = IoU
@@ -597,7 +596,6 @@ class Trainer(object):
                 ax.set_ylabel("Losses")
                 # plt.show()
                 fig.savefig(self.param_save_path + "losses.png")
-                plt.close(fig)
                 print('Loss plot saved')
 
                 # for iou
@@ -609,8 +607,9 @@ class Trainer(object):
                 ax1.set_xlabel("Epoch")
                 ax1.set_ylabel("Metric")
                 fig1.savefig(self.param_save_path + "IoUs.png")
-                plt.close(fig1)
                 print('IoU plot saved')
+
+                plt.close('all')
 
 
 if __name__ == "__main__":
