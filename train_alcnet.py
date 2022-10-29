@@ -462,6 +462,8 @@ class Trainer(object):
         # self.metric.reset()
         tbar = tqdm(self.eval_data)
 
+        fig = plt.figure()
+
         val_loss = 0.0
         val_loss_ave = 0.0
         for i, batch in enumerate(tbar):
@@ -490,20 +492,37 @@ class Trainer(object):
             tbar.set_description('Epoch %d, validation loss %.4f, IoU: %.4f, nIoU: %.4f' % (epoch, val_loss_ave, IoU, nIoU))
         self.val_losses.append(val_loss_ave)
 
-        # save the model if there is sign of overfitting
-        # only operates in tranining mode and when current epoch > 5
-        if args.eval is False and epoch > 5:
-            if self.val_losses[-1] > self.val_losses[-2]:
-                if self.train_losses[-1] < self.train_losses[-2]:
-                    self.net.save_parameters(self.param_save_path + 'check_point/' +'{}epoch.params'.format(epoch))
+        
+        if args.eval is False:
+            # save the model if there is sign of overfitting
+            # only operates in tranining mode and when current epoch > 5
+            if epoch > 5:
+                if self.val_losses[-1] > self.val_losses[-2]:
+                    if self.train_losses[-1] < self.train_losses[-2]:
+                        self.net.save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch))
 
-                # log the check point information
-                with open(self.param_save_path + 'checkpoint.log', 'a') as f:
-                    now = datetime.now()
-                    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                    f.write('{} - epoch: {:04d} Training loss: {:.4f} Validation loss{:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
-                            .format(dt_string, epoch, self.train_losses[-1], self.val_losses[-1],IoU, nIoU))
-                print("Sign of overfitting, checkpoint saved.")
+                    # log the check point information
+                    with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
+                        now = datetime.now()
+                        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+                        f.write('{} - epoch: {:04d} Training loss: {:.4f} Validation loss{:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
+                                .format(dt_string, epoch, self.train_losses[-1], self.val_losses[-1],IoU, nIoU))
+                    print("Sign of overfitting, checkpoint saved.")
+            
+            # Save plot for losses every 5 epoch
+            if epoch % 5 == 0:
+                if args.eval is False:
+                    fig = plt.figure()
+                    ax = fig.add_subplot(1, 1, 1)
+                    ax.plot(range(epoch+1), self.train_losses)
+                    ax.plot(range(epoch+1), self.val_losses)
+                    ax.legend(["Training","Validation"])
+                    ax.set_xlabel("Epoch")
+                    ax.set_ylabel("Losses")
+                    plt.show()
+                    fig.savefig(self.param_save_path + "losses.png")
+            
+
 
         if IoU > self.best_iou:
             self.best_iou = IoU
@@ -551,6 +570,7 @@ class Trainer(object):
             # self.net.save_parameters('{}{}epoch_{:s}_{:s}_{:.4f}_{:s}_{:.4f}.params'.format(
             #     self.param_save_path, epoch, self.save_prefix, 'IoU', IoU, 'nIoU', nIoU))
             
+            # Save plot for losses
             if args.eval is False:
                 fig = plt.figure()
                 ax = fig.add_subplot(1, 1, 1)
