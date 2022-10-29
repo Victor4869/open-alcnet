@@ -376,8 +376,8 @@ class Trainer(object):
             with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                 f.write('\n{} {}\n'.format(dt_string, self.arg_string))
                 f.write('Check point will be created when all the conditions are met: \n')
-                f.write('1. Operates in tranining mode and current epoch > 20 \n')
-                f.write('2. Validation loss starts increasing and tranining loss remains decreasing.\n')
+                f.write('1. Operates in tranining mode and current epoch > 40 \n')
+                f.write('2. Validation loss increases and tranining loss decreases for 2 successive epochs.\n')
                 f.write('3. Validation loss is higher than tranining loss. \n')
 
                 
@@ -504,18 +504,20 @@ class Trainer(object):
             self.nious.append(nIoU)
 
             # save the model if there is sign of overfitting
-            if epoch > 20:
+            if epoch > 40:
                 if self.val_losses[-1] > self.val_losses[-2] and \
+                    self.val_losses[-1] > self.val_losses[-3] and \
                     self.train_losses[-1] < self.train_losses[-2] and \
+                    self.train_losses[-1] < self.train_losses[-3] and \
                     self.val_losses[-1] > self.train_losses[-1]:
-                    self.nets[-2].save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch-1))
+                    self.nets[-3].save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch-2))
                     # log the check point information
                     with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                         now = datetime.now()
                         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                        f.write('{} - check point at epoch: {:04d} Training loss: {:.4f} Validation loss: {:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
-                                .format(dt_string, epoch-1, self.train_losses[-2], self.val_losses[-2],self.ious[-2], self.nious[-2]))
-                    print("Sign of overfitting, checkpoint at {} epoch saved.".format(epoch-1))
+                        f.write('{} - checkpoint saved at epoch: {:04d} Training loss: {:.4f} Validation loss: {:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
+                                .format(dt_string, epoch-2, self.train_losses[-3], self.val_losses[-3],self.ious[-3], self.nious[-3]))
+                    print("Sign of overfitting, saved checkpoint at {} epoch.".format(epoch-2))
             
             # Save plot for ious and losses every 5 epoch
             if epoch % 5 == 0:
