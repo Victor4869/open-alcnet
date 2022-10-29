@@ -519,6 +519,7 @@ class Trainer(object):
                     ax.set_ylabel("Losses")
                     # plt.show()
                     fig.savefig(self.param_save_path + "losses.png")
+                    fig.close()
             
 
 
@@ -579,7 +580,9 @@ class Trainer(object):
                 ax.set_ylabel("Losses")
                 # plt.show()
                 fig.savefig(self.param_save_path + "losses.png")
+                fig.close()
                 print('Loss figure saved')
+                
 
                 # for ep, net in enumerate(self.nets):
                 #     net.save_parameters(self.param_save_path + str(ep) + "epoch.params")
