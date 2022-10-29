@@ -380,12 +380,7 @@ class Trainer(object):
                 f.write('2. Validation loss increases and tranining loss decreases for 2 successive epochs.\n')
                 f.write('3. Validation loss is higher than tranining loss. \n')
 
-                
-
-
         with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
-            
-
             # first log message
             f.write('\n{} {}\n'.format(dt_string, self.arg_string))
             if args.resume is not None:
