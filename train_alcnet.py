@@ -343,6 +343,8 @@ class Trainer(object):
         self.train_losses = []
         self.val_losses = []
         self.nets = []
+        self.ious = []
+        self.nious = []
 
         
 
@@ -432,30 +434,32 @@ class Trainer(object):
             tbar.set_description('Epoch %d, training loss %.4f' % (epoch, train_loss_ave))
         self.train_losses.append(train_loss_ave)
 
-        # save the model for each epoch
-        self.net.save_parameters(self.param_save_path + 'tmp.params')
-        model = ''
-        if args.net_choice == 'MPCMResNetFPN':
-            r = self.args.r
-            layers = [self.args.blocks] * 3
-            channels = [8, 16, 32, 64]
-            shift = self.args.shift
-            pyramid_mode = self.args.pyramid_mode
-            scale_mode = self.args.scale_mode
-            pyramid_fuse = self.args.pyramid_fuse
 
-            model = MPCMResNetFPN(layers=layers, channels=channels, shift=shift,
-                                  pyramid_mode=pyramid_mode, scale_mode=scale_mode,
-                                  pyramid_fuse=pyramid_fuse, r=r)
-            # print("net_choice: ", net_choice)
-            # print("scale_mode: ", scale_mode)
-            # print("pyramid_fuse: ", pyramid_fuse)
-            # print("r: ", r)
-            # print("layers: ", layers)
-            # print("channels: ", channels)
-            # print("shift: ", shift)
-        model.load_parameters(self.param_save_path + 'tmp.params', mx.cpu(0))
-        self.nets.append(model)
+        if args.eval is False:
+            # save the model for each epoch, works in tranining mode only
+            self.net.save_parameters(self.param_save_path + 'tmp.params')
+            model = ''
+            if args.net_choice == 'MPCMResNetFPN':
+                r = self.args.r
+                layers = [self.args.blocks] * 3
+                channels = [8, 16, 32, 64]
+                shift = self.args.shift
+                pyramid_mode = self.args.pyramid_mode
+                scale_mode = self.args.scale_mode
+                pyramid_fuse = self.args.pyramid_fuse
+
+                model = MPCMResNetFPN(layers=layers, channels=channels, shift=shift,
+                                    pyramid_mode=pyramid_mode, scale_mode=scale_mode,
+                                    pyramid_fuse=pyramid_fuse, r=r)
+                # print("net_choice: ", net_choice)
+                # print("scale_mode: ", scale_mode)
+                # print("pyramid_fuse: ", pyramid_fuse)
+                # print("r: ", r)
+                # print("layers: ", layers)
+                # print("channels: ", channels)
+                # print("shift: ", shift)
+            model.load_parameters(self.param_save_path + 'tmp.params', mx.cpu(0))
+            self.nets.append(model)
 
 
         
@@ -466,9 +470,7 @@ class Trainer(object):
         self.nIoU_metric.reset()
         # self.metric.reset()
         tbar = tqdm(self.eval_data)
-
         fig = plt.figure()
-
         val_loss = 0.0
         val_loss_ave = 0.0
         for i, batch in enumerate(tbar):
@@ -496,9 +498,12 @@ class Trainer(object):
             _, nIoU = self.nIoU_metric.get()
             tbar.set_description('Epoch %d, validation loss %.4f, IoU: %.4f, nIoU: %.4f' % (epoch, val_loss_ave, IoU, nIoU))
         self.val_losses.append(val_loss_ave)
-
         
         if args.eval is False:
+
+            self.ious.append(IoU)
+            self.nious.append(nIoU)
+
             # save the model if there is sign of overfitting
             if self.val_losses[-1] > self.val_losses[-2] and \
                 self.train_losses[-1] < self.train_losses[-2] and \
@@ -513,9 +518,10 @@ class Trainer(object):
                             .format(dt_string, epoch, self.train_losses[-1], self.val_losses[-1],IoU, nIoU))
                 print("Sign of overfitting, checkpoint saved.")
             
-            # Save plot for losses every 5 epoch
-            if epoch % 5 == 0:
-                if args.eval is False:
+            # Save plot for ious and losses every 5 epoch
+                if args.eval is False and epoch % 5 == 0:
+
+                    # for loss
                     fig = plt.figure()
                     ax = fig.add_subplot(1, 1, 1)
                     ax.plot(range(epoch+1), self.train_losses)
@@ -526,6 +532,20 @@ class Trainer(object):
                     # plt.show()
                     fig.savefig(self.param_save_path + "losses.png")
                     plt.close(fig)
+
+                    # for iou
+                    fig1 = plt.figure()
+                    ax1 = fig1.add_subplot(1, 1, 1)
+                    ax1.plot(range(epoch+1), self.train_losses)
+                    ax1.plot(range(epoch+1), self.val_losses)
+                    ax1.legend(["IoU","nIoU"])
+                    ax1.set_xlabel("Epoch")
+                    ax1.set_ylabel("Metric")
+                    # plt.show()
+                    fig1.savefig(self.param_save_path + "IoUs.png")
+                    plt.close(fig1)
+
+
             
 
 
@@ -575,8 +595,10 @@ class Trainer(object):
             # self.net.save_parameters('{}{}epoch_{:s}_{:s}_{:.4f}_{:s}_{:.4f}.params'.format(
             #     self.param_save_path, epoch, self.save_prefix, 'IoU', IoU, 'nIoU', nIoU))
             
-            # Save plot for losses
+            # Save plot for loss and iou
             if args.eval is False:
+
+                # for loss
                 fig = plt.figure()
                 ax = fig.add_subplot(1, 1, 1)
                 ax.plot(range(epoch+1), self.train_losses)
@@ -587,7 +609,20 @@ class Trainer(object):
                 # plt.show()
                 fig.savefig(self.param_save_path + "losses.png")
                 plt.close(fig)
-                print('Loss figure saved')
+                print('Loss plot saved')
+
+                # for iou
+                fig1 = plt.figure()
+                ax1 = fig1.add_subplot(1, 1, 1)
+                ax1.plot(range(epoch+1), self.train_losses)
+                ax1.plot(range(epoch+1), self.val_losses)
+                ax1.legend(["IoU","nIoU"])
+                ax1.set_xlabel("Epoch")
+                ax1.set_ylabel("Metric")
+                fig1.savefig(self.param_save_path + "IoUs.png")
+                plt.close(fig1)
+                print('IoU plot saved')
+
                 
 
                 # for ep, net in enumerate(self.nets):
