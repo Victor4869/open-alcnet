@@ -367,7 +367,7 @@ class Trainer(object):
         str1 = "Dateset: " + args.dataset + ", Prediction time: {:.4f}s, FPS: {:.2f}".format(sum(times), len(self.valset)/sum(times) )
         str2 = "Log file and " + str(len(self.valset)) + " images saved in: " + save_path
         now = datetime.now()
-        with open(save_path + f_name + '.log', 'a') as f:
+        with open(save_path + 'visual.log', 'a') as f:
           f.write("\n" "Date: "+ now.strftime("%d/%m/%Y %H:%M:%S") + "\n")
           f.write("Parameter file: " + args.resume + "\n")
           f.write("Host info: " + self.host_name + "\n")
