@@ -1,3 +1,4 @@
+from fileinput import close
 import os
 # os.system("taskset -p -c 40-47 %d" % os.getpid())
 
@@ -519,7 +520,7 @@ class Trainer(object):
                     ax.set_ylabel("Losses")
                     # plt.show()
                     fig.savefig(self.param_save_path + "losses.png")
-                    fig.close()
+                    plt.close(fig)
             
 
 
@@ -580,7 +581,7 @@ class Trainer(object):
                 ax.set_ylabel("Losses")
                 # plt.show()
                 fig.savefig(self.param_save_path + "losses.png")
-                fig.close()
+                plt.close(fig)
                 print('Loss figure saved')
                 
 
