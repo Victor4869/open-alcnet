@@ -368,7 +368,7 @@ class Trainer(object):
                 os.makedirs(path)
                 print(path + ' did not existed and was created.')
             except:
-                pass
+                print("Checkpoint folder already found: " + self.param_save_path)
 
             with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                 f.write('\n{} {}\n'.format(dt_string, self.arg_string))
