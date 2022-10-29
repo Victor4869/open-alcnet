@@ -373,7 +373,7 @@ class Trainer(object):
             with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                 f.write('\n{} {}\n'.format(dt_string, self.arg_string))
                 f.write('Check point will be created when validation loss starts increasing and tranining loss remains decreasing.\n')
-                f.write('Only operates in tranining mode and when current epoch > 5 \n')
+                f.write('Only operates in tranining mode and when current epoch > 20 \n')
 
 
         with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
@@ -495,17 +495,15 @@ class Trainer(object):
         
         if args.eval is False:
             # save the model if there is sign of overfitting
-            # only operates in tranining mode and when current epoch > 5
-            if epoch > 5:
-                if self.val_losses[-1] > self.val_losses[-2]:
-                    if self.train_losses[-1] < self.train_losses[-2]:
-                        self.net.save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch))
-
+            # only operates in tranining mode and when current epoch > 20
+            if epoch > 20:
+                if self.val_losses[-1] > self.val_losses[-2] and self.train_losses[-1] < self.train_losses[-2]:
+                    self.net.save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch))
                     # log the check point information
                     with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                         now = datetime.now()
                         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-                        f.write('{} - epoch: {:04d} Training loss: {:.4f} Validation loss{:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
+                        f.write('{} - epoch: {:04d} Training loss: {:.4f} Validation loss: {:.4f} IoU: {:.4f} nIoU: {:.4f}\n'\
                                 .format(dt_string, epoch, self.train_losses[-1], self.val_losses[-1],IoU, nIoU))
                     print("Sign of overfitting, checkpoint saved.")
             
