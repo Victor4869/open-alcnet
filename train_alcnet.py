@@ -533,8 +533,8 @@ class Trainer(object):
                 # for iou
                 fig1 = plt.figure()
                 ax1 = fig1.add_subplot(1, 1, 1)
-                ax1.plot(range(epoch+1), self.train_losses)
-                ax1.plot(range(epoch+1), self.val_losses)
+                ax1.plot(range(epoch+1), self.ious)
+                ax1.plot(range(epoch+1), self.nious)
                 ax1.legend(["IoU","nIoU"])
                 ax1.set_xlabel("Epoch")
                 ax1.set_ylabel("Metric")
@@ -601,8 +601,8 @@ class Trainer(object):
                 # for iou
                 fig1 = plt.figure()
                 ax1 = fig1.add_subplot(1, 1, 1)
-                ax1.plot(range(epoch+1), self.train_losses)
-                ax1.plot(range(epoch+1), self.val_losses)
+                ax1.plot(range(epoch+1), self.ious)
+                ax1.plot(range(epoch+1), self.nious)
                 ax1.legend(["IoU","nIoU"])
                 ax1.set_xlabel("Epoch")
                 ax1.set_ylabel("Metric")
