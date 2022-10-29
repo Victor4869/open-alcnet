@@ -519,7 +519,7 @@ class Trainer(object):
                     ax.legend(["Training","Validation"])
                     ax.set_xlabel("Epoch")
                     ax.set_ylabel("Losses")
-                    plt.show()
+                    # plt.show()
                     fig.savefig(self.param_save_path + "losses.png")
             
 
@@ -579,8 +579,9 @@ class Trainer(object):
                 ax.legend(["Training","Validation"])
                 ax.set_xlabel("Epoch")
                 ax.set_ylabel("Losses")
-                plt.show()
+                # plt.show()
                 fig.savefig(self.param_save_path + "losses.png")
+                print('Loss figure saved')
 
                 # for ep, net in enumerate(self.nets):
                 #     net.save_parameters(self.param_save_path + str(ep) + "epoch.params")
