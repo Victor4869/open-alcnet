@@ -373,8 +373,12 @@ class Trainer(object):
 
             with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
                 f.write('\n{} {}\n'.format(dt_string, self.arg_string))
-                f.write('Check point will be created when validation loss starts increasing and tranining loss remains decreasing.\n')
-                f.write('Only operates in tranining mode and when current epoch > 20 \n')
+                f.write('Check point will be created when all the conditions are met: \n')
+                f.write('1. Operates in tranining mode and current epoch > 20 \n')
+                f.write('2. Validation loss starts increasing and tranining loss remains decreasing.\n')
+                f.write('3. Validation loss is lower than tranining loss. \n')
+
+                
 
 
         with open(self.param_save_path + self.date_string + self.save_prefix + '_best_IoU.log', 'a') as f:
@@ -496,9 +500,10 @@ class Trainer(object):
         
         if args.eval is False:
             # save the model if there is sign of overfitting
-            # only operates in tranining mode and when current epoch > 20
             if epoch > 20:
-                if self.val_losses[-1] > self.val_losses[-2] and self.train_losses[-1] < self.train_losses[-2]:
+                if self.val_losses[-1] > self.val_losses[-2] and \
+                    self.train_losses[-1] < self.train_losses[-2] and \
+                    self.val_losses[-1] < self.train_losses[-1]:
                     self.net.save_parameters(self.param_save_path + 'checkpoint/' +'{}epoch.params'.format(epoch))
                     # log the check point information
                     with open(self.param_save_path + 'checkpoint/' + 'checkpoint.log', 'a') as f:
