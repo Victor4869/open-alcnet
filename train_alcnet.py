@@ -5,6 +5,7 @@ import platform
 import sys
 import socket
 import argparse
+from xmlrpc.client import boolean
 import numpy as np
 from tqdm import tqdm
 
@@ -20,6 +21,8 @@ from data import IceContrast
 from model import MPCMResNetFPN
 from metric import SigmoidMetric, SamplewiseSigmoidMetric
 from loss import SoftIoULoss, SamplewiseSoftIoULoss
+
+import matplotlib.pyplot as plt
 
 def parse_args():
     """Training Options for Segmentation Experiments"""
@@ -338,6 +341,10 @@ class Trainer(object):
         self.best_nIoU = 0
         self.is_best = False
 
+        self.train_losses = []
+        self.val_losses = []
+        self.nets = []
+
         
 
         date = datetime.now()
@@ -365,8 +372,7 @@ class Trainer(object):
             else:
                 f.write('New model initialized\n')
 
-            # somehow the eval value is flipped 
-            if not args.eval:
+            if args.eval is False:
                 f.write('Training mode\n')
             else:
                 f.write('Evaluation mode\n')
@@ -382,18 +388,15 @@ class Trainer(object):
             else:
                 f.write('New model initialized\n')
             
-            # somehow the eval value is flipped 
-            if not args.eval:
+            if args.eval is False:
                 f.write('Training mode\n')
             else:
                 f.write('Evaluation mode\n')
-        
-
-
 
     def training(self, epoch):
         tbar = tqdm(self.train_data)
         train_loss = 0.0
+        train_loss_ave = 0.0
         for i, batch in enumerate(tbar):
             data = gluon.utils.split_and_load(batch[0], ctx_list=self.args.ctx, batch_axis=0)
             labels = gluon.utils.split_and_load(batch[1], ctx_list=self.args.ctx, batch_axis=0)
@@ -408,27 +411,45 @@ class Trainer(object):
             self.optimizer.step(self.args.batch_size)
             for loss in losses:
                 train_loss += np.mean(loss.asnumpy()) / len(losses)
-            tbar.set_description('Epoch %d, training loss %.4f' % (epoch, train_loss/(i+1)))
+            train_loss_ave = train_loss/(i+1)
+            tbar.set_description('Epoch %d, training loss %.4f' % (epoch, train_loss_ave))
+        self.train_losses.append(train_loss_ave)
 
     def validation(self, epoch):
         self.iou_metric.reset()
         self.nIoU_metric.reset()
         # self.metric.reset()
         tbar = tqdm(self.eval_data)
+
+        val_loss = 0.0
+        val_loss_ave = 0.0
         for i, batch in enumerate(tbar):
             data = gluon.utils.split_and_load(batch[0], ctx_list=self.args.ctx, batch_axis=0)
             labels = gluon.utils.split_and_load(batch[1], ctx_list=self.args.ctx, batch_axis=0)
             preds = []
+
+            losses = []
             for x, y in zip(data, labels):
                 pred = self.net(x)
                 preds.append(pred)
+                loss = self.criterion(pred, y)
+                losses.append(loss)
+
+            for loss in losses:
+                val_loss += np.mean(loss.asnumpy()) / len(losses)
+            
+            val_loss_ave = val_loss/(i+1)
+            
             # self.metric.update(preds, labels)
             self.iou_metric.update(preds, labels)
             self.nIoU_metric.update(preds, labels)
 
             _, IoU = self.iou_metric.get()
             _, nIoU = self.nIoU_metric.get()
-            tbar.set_description('Epoch %d, IoU: %.4f, nIoU: %.4f' % (epoch, IoU, nIoU))
+            tbar.set_description('Epoch %d, validation loss %.4f, IoU: %.4f, nIoU: %.4f' % (epoch, val_loss_ave, IoU, nIoU))
+        self.val_losses.append(val_loss_ave)
+        
+        self.nets.append(self.net)
 
         if IoU > self.best_iou:
             self.best_iou = IoU
@@ -474,10 +495,23 @@ class Trainer(object):
 
             # Save the model parameter in the last epoch
             # In most case, this is not the model with the best IoU and nIoU.
-            self.net.save_parameters('{}{}epoch_{:s}_{:s}_{:.4f}.params'.format(
-                self.param_save_path, epoch, self.save_prefix, 'IoU', IoU))
-            self.net.save_parameters('{}{}epoch_{:s}_{:s}_{:.4f}.params'.format(
-                self.param_save_path, epoch, self.save_prefix, 'nIoU', nIoU))
+            self.net.save_parameters('{}{}epoch_{:s}_{:s}_{:.4f}_{:s}_{:.4f}.params'.format(
+                self.param_save_path, epoch, self.save_prefix, 'IoU', IoU, 'nIoU', nIoU))
+            
+            if not args.eval:
+                fig = plt.figure()
+                ax = fig.add_subplot(1, 1, 1)
+                ax.plot(range(epoch+1), self.train_losses)
+                ax.plot(range(epoch+1), self.val_losses)
+                ax.legend(["Training","Validation"])
+                ax.set_xlabel("Epoch")
+                ax.set_ylabel("Losses")
+                plt.show()
+                fig.savefig(self.param_save_path + "losses.png")
+
+                for ep, net in enumerate(self.nets):
+                    net.save_parameters(self.param_save_path + str(ep) + "epoch.params")
+
 
 if __name__ == "__main__":
     args = parse_args()
