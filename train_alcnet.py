@@ -592,7 +592,7 @@ class Trainer(object):
             now = datetime.now()
             dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
             with open(self.param_save_path + 'evaluation.log', 'a') as f:
-                f.write('{} - {} result - loss: {:.4f} IoU: {:.4f}, nIoU: {:.4f}\n'.format(dt_string, args.eval, val_loss_ave, IoU, nIoU))
+                f.write('{} - {} result - loss: {:.4f} IoU: {:.4f}, nIoU: {:.4f}\n'.format(dt_string, args.val_split, val_loss_ave, IoU, nIoU))
 
 
 if __name__ == "__main__":
