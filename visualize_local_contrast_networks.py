@@ -306,8 +306,6 @@ class Trainer(object):
 
         times = [] # to record inference time
 
-        
-        os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '0' # turn off performance tests 
         for img, mask, img_id in self.valset:
 
             exp_img = img.expand_dims(axis=0) # load image
@@ -360,8 +358,6 @@ class Trainer(object):
             except:
               pass
             # break
-
-        os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '1' # turn performance test back on
 
         # create log file
         str1 = "Dateset: " + args.dataset + ", Prediction time: {:.4f}s, FPS: {:.2f}".format(sum(times), len(self.valset)/sum(times) )

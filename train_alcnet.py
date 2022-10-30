@@ -416,8 +416,6 @@ class Trainer(object):
                 else:
                     raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
 
-
-
     def training(self, epoch):
         tbar = tqdm(self.train_data)
         train_loss = 0.0
@@ -599,10 +597,8 @@ if __name__ == "__main__":
     args = parse_args()
     trainer = Trainer(args)
     if args.eval:
-        os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '0' # turn off performance tests 
         print('Evaluating model: ', args.resume)
         trainer.validation(args.start_epoch)
-        os.environ['MXNET_CUDNN_AUTOTUNE_DEFAULT'] = '1' # turn performance test back on
     else:
         print('Starting Epoch:', args.start_epoch)
         print('Total Epochs:', args.epochs)
