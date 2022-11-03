@@ -1,35 +1,35 @@
 Training new model
 
-python train_alcnet.py^
- --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec^
- --scale-mode Multiple --pyramid-fuse bottomuplocal^
- --r 1 --blocks 4^
- --val-split val --batch-size 2 --test-batch-size 8 --epochs 200
+python train_alcnet.py\
+ 	 --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec\
+ 	 --scale-mode Multiple --pyramid-fuse bottomuplocal\
+ 	 --r 1 --blocks 4\
+ 	 --val-split val --batch-size 2 --test-batch-size 8 --epochs 200\
 
 Training saved model
 
-python train_alcnet.py^
- --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec^
- --scale-mode Multiple --pyramid-fuse bottomuplocal^
- --r 1 --blocks 4^
- --val-split val --batch-size 2 --test-batch-size 8 --epochs 200^
- --resume ~/params/BottomUpLocal_r_1_b_4_0.7614.params
+python train_alcnet.py\
+ 	 --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec\
+ 	 --scale-mode Multiple --pyramid-fuse bottomuplocal\
+	 --r 1 --blocks 4\
+ 	 --val-split val --batch-size 2 --test-batch-size 8 --epochs 200\
+	 --resume ~/open-alcnet/params/BottomUpLocal_r_1_b_4_0.7614.params
 
 
 Evaluation
 
-python train_alcnet.py^
- --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec^
- --scale-mode Multiple --pyramid-fuse bottomuplocal^
- --r 1 --blocks 4^
- --val-split val --test-batch-size 8 --eval^
- --resume ~/params/BottomUpLocal_r_1_b_4_0.7614.params
+python train_alcnet.py\
+ 	 --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec\
+ 	 --scale-mode Multiple --pyramid-fuse bottomuplocal\
+	 --r 1 --blocks 4\
+	 --val-split val --test-batch-size 8 --eval\
+ 	 --resume ~/open-alcnet/params/BottomUpLocal_r_1_b_4_0.7614.params
 
 Save image
 
-python visualize_local_contrast_networks.py^
- --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec^
- --scale-mode Multiple --pyramid-fuse bottomuplocal^
- --r 1 --blocks 4^
- --val-split val --test-batch-size 8 --eval^
- --resume ~/params/BottomUpLocal_r_1_b_4_0.7614.params
+python visualize_local_contrast_networks.py\
+ 	 --dataset sirst --net-choice MPCMResNetFPN --pyramid-mode Dec\
+	 --scale-mode Multiple --pyramid-fuse bottomuplocal\
+	 --r 1 --blocks 4\
+ 	 --val-split val --test-batch-size 8 --eval\
+	 --resume ~/open-alcnet/params/BottomUpLocal_r_1_b_4_0.7614.params

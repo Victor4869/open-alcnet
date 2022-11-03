@@ -331,10 +331,10 @@ class Trainer(object):
             # pass if xml file is not found
             try:
               xml_path = ''
-              if self.dataset == 'sirst':
-                  xml_path = os.path.join(self.data_root,self.dataset,'masks', img_id+'.xml')
+              if args.dataset == 'sirst':
+                  xml_path = os.path.join(self.data_root,args.dataset,'masks', img_id+'.xml')
                   xml_path = os.path.expanduser(xml_path)
-              # print(xml_path)
+            #   print(xml_path)
               xml_file = ET.parse(xml_path)
               xml_root = xml_file.getroot()
               # sample_annotations = []

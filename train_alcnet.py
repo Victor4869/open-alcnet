@@ -351,22 +351,20 @@ class Trainer(object):
         date = datetime.now()
         self.date_string = date.strftime("%d-%m-%Y_") # date for log file name
 
-        self.param_save_path = self.alc_dir + '/params/' + date.strftime("%d-%m-%Y_%H-%M-%S_") + self.host_name + "/"    # path to save parameter files
-        # print(self.param_save_path)
-
-        # make folder for log and parameter files
-        try:
-            os.makedirs(self.param_save_path)
-            print(self.param_save_path + ' did not existed and was created.')
-        except:
-            print("Parameter folder already found: " + self.param_save_path)
-
         
         now = datetime.now()
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S") # time for log message
 
         # create log files
         if args.eval is False:
+            # make folder for log and parameter files
+            self.param_save_path = self.alc_dir + '/params/' + date.strftime("%d-%m-%Y_%H-%M-%S_") + self.host_name + "/"    # path to save parameter files
+            # print(self.param_save_path)
+            try:
+                os.makedirs(self.param_save_path)
+                print(self.param_save_path + ' did not existed and was created.')
+            except:
+                print("Parameter folder already found: " + self.param_save_path)
             # checkpoint log
             try:
                 path = self.param_save_path + 'checkpoint/'
@@ -390,7 +388,7 @@ class Trainer(object):
                 if args.resume is not None:
                     args.resume = os.path.expanduser(args.resume)
                     if os.path.isfile(args.resume):
-                        print("Model resumed")
+                        f.write("Model resumed")
                     else:
                         raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
 
@@ -402,17 +400,19 @@ class Trainer(object):
                 if args.resume is not None:
                     args.resume = os.path.expanduser(args.resume)
                     if os.path.isfile(args.resume):
-                        print("Model resumed")
+                        f.write("Model resumed")
                     else:
                         raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
         else:
-            # evaluation log    
+            # evaluation log
+            # create log in the same folder as the resumed model
+            head, tail = os.path.split(args.resume)
+            self.param_save_path = head + '/'
             with open(self.param_save_path + 'evaluation.log', 'a') as f:
                 # first log message
-                f.write('\n{} {}\n'.format(dt_string, self.arg_string))
-                f.write('Evaluation mode\n')
+                f.write('\n{} Evaluation on dataset {}\n'.format(dt_string, args.dataset))
                 if os.path.isfile(args.resume):
-                    f.write("Model resumed\n")
+                    f.write("Model resumed: {}\n".format(tail))
                 else:
                     raise RuntimeError("=> no checkpoint found at '{}'".format(args.resume))
 
